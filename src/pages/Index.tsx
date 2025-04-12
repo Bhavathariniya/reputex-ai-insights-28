@@ -6,6 +6,7 @@ import Footer from '@/components/Footer';
 import AddressInput from '@/components/AddressInput';
 import LoadingAnimation from '@/components/LoadingAnimation';
 import AnalysisReport from '@/components/AnalysisReport';
+import PlaceholderCard from '@/components/PlaceholderCard';
 import { toast } from 'sonner';
 import { Volume2, VolumeX, Shield } from 'lucide-react';
 import {
@@ -15,6 +16,7 @@ import {
   getAIAnalysis,
   checkBlockchainForScore,
   storeScoreOnBlockchain,
+  ApiResponse
 } from '@/lib/api-client';
 
 const Index = () => {
@@ -61,10 +63,12 @@ const Index = () => {
       
       // If no existing score, perform new analysis
       // Fetch wallet transaction data
-      const walletData = await getWalletTransactions(address, network);
+      const walletResponse: ApiResponse<any> = await getWalletTransactions(address, network);
+      const walletData = walletResponse.data || {};
       
       // Fetch token data
-      const tokenData = await getTokenData(address, network);
+      const tokenResponse: ApiResponse<any> = await getTokenData(address, network);
+      const tokenData = tokenResponse.data || {};
       
       // Determine if this is a token or wallet based on data received
       // In a real application, this would be determined by API response
@@ -72,23 +76,26 @@ const Index = () => {
       setAddressType(isToken ? 'token' : 'wallet');
       
       // For token contracts, get GitHub repo activity if available
-      let repoData = { data: null };
+      let repoData = {};
       if (isToken) {
-        repoData = await getRepoActivity("example/repo");
+        const repoResponse: ApiResponse<any> = await getRepoActivity("example/repo");
+        if (repoResponse.data) {
+          repoData = repoResponse.data;
+        }
       }
       
       // Aggregate the data
       const aggregatedData = {
-        ...(walletData.data || {}),
-        ...(tokenData.data || {}),
-        ...(repoData.data ? repoData.data : {}),
+        ...walletData,
+        ...tokenData,
+        ...repoData,
         community_size: isToken ? "Medium" : undefined, // Simulated community size for tokens
         is_token: isToken,
         network: network,
       };
       
       // Get AI analysis
-      const aiAnalysisResponse = await getAIAnalysis(aggregatedData);
+      const aiAnalysisResponse: ApiResponse<any> = await getAIAnalysis(aggregatedData);
       
       if (aiAnalysisResponse.data) {
         // Enhance with additional scores
