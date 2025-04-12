@@ -79,8 +79,8 @@ const Index = () => {
       
       // Aggregate the data
       const aggregatedData = {
-        ...walletData.data,
-        ...tokenData.data,
+        ...(walletData.data || {}),
+        ...(tokenData.data || {}),
         ...(repoData.data ? repoData.data : {}),
         community_size: isToken ? "Medium" : undefined, // Simulated community size for tokens
         is_token: isToken,
