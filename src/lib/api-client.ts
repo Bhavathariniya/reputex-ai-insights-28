@@ -9,10 +9,6 @@ export interface ApiResponse<T> {
 
 // API endpoints - in a real app, move these to environment variables
 const API_ENDPOINTS = {
-  bitcoin: {
-    explorer: "https://api.blockchair.com/bitcoin",
-    info: "https://blockchain.info/api",
-  },
   ethereum: {
     explorer: "https://api.etherscan.io/api",
     price: "https://api.coingecko.com/api/v3/simple/token_price/ethereum"
@@ -32,30 +28,6 @@ const API_ENDPOINTS = {
   optimism: {
     explorer: "https://api-optimistic.etherscan.io/api",
     price: "https://api.coingecko.com/api/v3/simple/token_price/optimistic-ethereum"
-  },
-  solana: {
-    explorer: "https://api.solscan.io",
-    price: "https://api.coingecko.com/api/v3/simple/token_price/solana"
-  },
-  avalanche: {
-    explorer: "https://api.snowtrace.io/api",
-    price: "https://api.coingecko.com/api/v3/simple/token_price/avalanche"
-  },
-  fantom: {
-    explorer: "https://api.ftmscan.com/api",
-    price: "https://api.coingecko.com/api/v3/simple/token_price/fantom"
-  },
-  base: {
-    explorer: "https://api.basescan.org/api",
-    price: "https://api.coingecko.com/api/v3/simple/token_price/base"
-  },
-  zksync: {
-    explorer: "https://api-zksync-era.etherscan.io/api",
-    price: "https://api.coingecko.com/api/v3/simple/token_price/zksync"
-  },
-  l1x: {
-    explorer: "https://explorer-api.l1x.io",
-    price: "https://api.l1x.io/price" // Simulated endpoint
   }
 };
 
@@ -68,14 +40,7 @@ const API_KEYS = {
   binance: "YOURAPIKEY",
   polygon: "YOURAPIKEY",
   arbitrum: "YOURAPIKEY",
-  optimism: "YOURAPIKEY",
-  bitcoin: "YOURAPIKEY",
-  solana: "YOURAPIKEY",
-  avalanche: "YOURAPIKEY",
-  fantom: "YOURAPIKEY",
-  base: "YOURAPIKEY",
-  zksync: "YOURAPIKEY",
-  l1x: "YOURAPIKEY"
+  optimism: "YOURAPIKEY"
 };
 
 // Utility function to fetch data from APIs
@@ -101,44 +66,14 @@ export async function fetchData<T>(url: string): Promise<ApiResponse<T>> {
 export async function getWalletTransactions(address: string, network: string = 'ethereum'): Promise<ApiResponse<any>> {
   // In a real implementation, this would connect to the appropriate blockchain explorer API
   // For MVP, we'll simulate the response
-  
-  // Different wallet metrics for different chains
-  const walletMetrics: Record<string, any> = {
-    bitcoin: {
-      wallet_age: `${Math.floor(Math.random() * 5) + 3} years`,
-      total_txns: Math.floor(Math.random() * 2000) + 500,
-      num_utxos: Math.floor(Math.random() * 100) + 10,
-      avg_balance: `${(Math.random() * 2).toFixed(4)} BTC`,
-    },
-    solana: {
-      wallet_age: `${Math.floor(Math.random() * 2) + 1} years`,
-      total_txns: Math.floor(Math.random() * 5000) + 1000,
-      num_nfts: Math.floor(Math.random() * 20) + 1,
-      avg_balance: `${Math.floor(Math.random() * 100)} SOL`,
-    },
-    l1x: {
-      wallet_age: `${Math.floor(Math.random() * 1) + 1} years`, // Newer chain
-      total_txns: Math.floor(Math.random() * 1000) + 100,
-      num_contracts: Math.floor(Math.random() * 5) + 1,
-      avg_balance: `${Math.floor(Math.random() * 5000)} L1X`,
-    },
-    // Default EVM metrics for other chains
-    default: {
-      wallet_age: `${Math.floor(Math.random() * 5) + 1} years`,
-      total_txns: Math.floor(Math.random() * 2000) + 100,
-      num_contracts: Math.floor(Math.random() * 10) + 1,
-      avg_balance: `${Math.floor(Math.random() * 10000)} USDT`,
-    }
-  };
-  
-  // Get the appropriate metrics or use default
-  const metrics = walletMetrics[network] || walletMetrics.default;
-  
   return simulateApiCall({
     status: "1",
     message: "OK",
     result: {
-      ...metrics,
+      wallet_age: `${Math.floor(Math.random() * 5) + 1} years`,
+      total_txns: Math.floor(Math.random() * 2000) + 100,
+      num_contracts: Math.floor(Math.random() * 10) + 1,
+      avg_balance: `${Math.floor(Math.random() * 10000)} USDT`,
       network: network,
     }
   });
@@ -147,38 +82,12 @@ export async function getWalletTransactions(address: string, network: string = '
 // Token data API functions
 export async function getTokenData(tokenAddress: string, network: string = 'ethereum'): Promise<ApiResponse<any>> {
   // In a real implementation, this would connect to CoinGecko or similar API
-  // For MVP, we'll simulate the response with network-specific data
-  
-  const tokenMetrics: Record<string, any> = {
-    bitcoin: {
-      token_type: "UTXO",
-      age: "Since 2009",
-      tx_volume_24h: `$${Math.floor(Math.random() * 1000000000) + 1000000000}`,
-    },
-    solana: {
-      token_type: "SPL",
-      program_id: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-      tx_volume_24h: `$${Math.floor(Math.random() * 5000000) + 1000000}`,
-    },
-    l1x: {
-      token_type: "L1X Native",
-      features: "Ultra-fast finality, ZK proofs",
-      tx_volume_24h: `$${Math.floor(Math.random() * 1000000) + 100000}`,
-    },
-    default: {
-      token_type: network === 'ethereum' ? 'ERC-20' : 'Ethereum-compatible',
-    }
-  };
-  
-  // Get network specific metrics or use default
-  const metrics = tokenMetrics[network] || tokenMetrics.default;
-  
+  // For MVP, we'll simulate the response
   return simulateApiCall({
     liquidity: ["Low", "Medium", "High"][Math.floor(Math.random() * 3)],
     price_change_24h: (Math.random() * 20 - 10).toFixed(2) + "%",
     volume_24h: `$${Math.floor(Math.random() * 1000000)}`,
     market_cap: `$${Math.floor(Math.random() * 10000000)}`,
-    ...metrics,
     network: network,
   });
 }
@@ -201,14 +110,7 @@ async function simulateApiCall<T>(mockData: T): Promise<ApiResponse<T>> {
   return new Promise((resolve) => {
     // Simulate network delay
     setTimeout(() => {
-      // Sometimes simulate no data for certain chains (about 20% of the time)
-      const hasData = Math.random() > 0.2;
-      
-      if (hasData) {
-        resolve({ data: mockData });
-      } else {
-        resolve({ data: null });
-      }
+      resolve({ data: mockData });
     }, 1000);
   });
 }
@@ -227,14 +129,6 @@ export async function getAIAnalysis(aggregatedData: any): Promise<ApiResponse<an
   
   // Different analysis texts based on network
   const analysisTexts: Record<string, string[]> = {
-    bitcoin: [
-      "The Bitcoin address shows a history of consistent transactions with known legitimate entities. The UTXO structure appears typical for a standard user wallet, with no apparent connections to blacklisted addresses.",
-      "Analysis of this Bitcoin address reveals regular transaction patterns consistent with legitimate use. The address has a reasonable transaction volume and hasn't interacted with any known tainted funds based on our analysis."
-    ],
-    l1x: [
-      "This L1X address shows promising metrics with high transaction throughput and efficiency. The blockchain's ZK-based privacy features are being utilized appropriately without suspicious patterns.",
-      "The L1X token demonstrates solid fundamentals with growing adoption in the ecosystem. ZK proof utilization appears legitimate and the transaction patterns align with standard protocol usage."
-    ],
     ethereum: [
       "The Ethereum address shows consistent transaction history and good liquidity, indicating reliability and operational stability. Developer activity is moderate but steady. Based on transaction volume and age, this appears to be an established project with reasonable trust indicators.",
       "Analysis of this Ethereum address reveals strong developer commitment with frequent commits and updates. Liquidity levels are adequate for current market cap. The address has a solid transaction history with diverse interactions, suggesting legitimate operations."
@@ -254,26 +148,6 @@ export async function getAIAnalysis(aggregatedData: any): Promise<ApiResponse<an
     optimism: [
       "The Optimism address shows healthy transaction patterns and active usage. Developer commitment appears strong with regular updates and improvements. Market liquidity is sufficient for current trading volume.",
       "Analysis of this Optimism token reveals stable growth metrics and reasonable holder distribution. Contract security appears satisfactory and the project demonstrates signs of long-term viability."
-    ],
-    solana: [
-      "This Solana address demonstrates efficient transaction processing and appropriate use of the Solana ecosystem. The SPL token interactions appear legitimate with no signs of malicious program calls.",
-      "Analysis of this Solana token shows healthy program structure and reasonable transaction volume. The token distribution appears fair and the project has consistent engagement metrics."
-    ],
-    avalanche: [
-      "The Avalanche address shows strong C-Chain activity and legitimate contract interactions. The transaction history demonstrates consistent usage patterns with no apparent exploitative behavior.",
-      "This Avalanche token demonstrates solid fundamentals with appropriate subnets utilization. Liquidity appears adequate for its market cap and the holder distribution is reasonably fair."
-    ],
-    fantom: [
-      "The Fantom address shows optimized gas usage and appropriate Opera mainnet interaction. Transaction patterns appear legitimate with reasonable frequency and value transfers.",
-      "Analysis of this Fantom token reveals balanced metrics with adequate liquidity for current trading needs. The token contract shows no suspicious minting or transfer patterns."
-    ],
-    base: [
-      "This Base address demonstrates appropriate L2 rollup utilization with efficient transaction batching. The activity pattern appears legitimate with no suspicious bridging activity.",
-      "The Base token shows healthy on-chain metrics with reasonable L2-to-L1 settlement patterns. Contract interactions appear standard with no suspicious withdrawal patterns."
-    ],
-    zksync: [
-      "The zkSync address demonstrates appropriate ZK proof generation and verification. The transaction compression appears optimal and the account abstraction usage is legitimate.",
-      "Analysis of this zkSync token shows appropriate use of the ZK infrastructure with no suspicious proof generation. The token economics appear balanced with reasonable distribution."
     ]
   };
   
@@ -285,9 +159,6 @@ export async function getAIAnalysis(aggregatedData: any): Promise<ApiResponse<an
     trust_score: trustScore,
     developer_score: developerScore,
     liquidity_score: liquidityScore,
-    community_score: Math.floor(Math.random() * 30) + 50, // Random score between 50-80
-    holder_distribution: Math.floor(Math.random() * 40) + 40, // Random score between 40-80
-    fraud_risk: Math.floor(Math.random() * 30) + 10, // Random score between 10-40
     analysis: networkTexts[analysisIndex],
     timestamp: new Date().toISOString(),
     network: network

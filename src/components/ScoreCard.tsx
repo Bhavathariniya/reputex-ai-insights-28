@@ -24,18 +24,9 @@ interface ScoreCardProps {
   score: number;
   type: 'trust' | 'developer' | 'liquidity' | 'community' | 'holders' | 'fraud';
   description?: string;
-  networkIcon?: React.ReactNode;
-  networkName?: string;
 }
 
-const ScoreCard: React.FC<ScoreCardProps> = ({ 
-  title, 
-  score, 
-  type, 
-  description, 
-  networkIcon, 
-  networkName 
-}) => {
+const ScoreCard: React.FC<ScoreCardProps> = ({ title, score, type, description }) => {
   // Determine score level
   const scoreLevel: ScoreLevel = 
     score >= 80 ? ScoreLevel.HIGH :
@@ -85,7 +76,7 @@ const ScoreCard: React.FC<ScoreCardProps> = ({
   };
 
   return (
-    <div className="glowing-card rounded-xl overflow-hidden transition-all duration-300 hover:scale-[1.02] h-full">
+    <div className="glowing-card rounded-xl overflow-hidden transition-all duration-300 hover:scale-[1.02]">
       <div className={`h-1 bg-gradient-to-r ${
         scoreLevel === ScoreLevel.HIGH
           ? 'from-neon-cyan to-neon-blue'
@@ -95,19 +86,10 @@ const ScoreCard: React.FC<ScoreCardProps> = ({
       }`}></div>
       
       <div className="p-6">
-        <div className="flex justify-between items-start mb-4">
+        <div className="flex justify-between items-center mb-4">
           <div className="flex items-center gap-2">
             {renderIcon()}
-            <div>
-              <h3 className="text-lg font-semibold">{title}</h3>
-              
-              {networkName && networkIcon && (
-                <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-                  {networkIcon}
-                  <span>{networkName}</span>
-                </div>
-              )}
-            </div>
+            <h3 className="text-lg font-semibold">{title}</h3>
           </div>
           <div className="text-2xl font-bold">{score}<span className="text-sm text-muted-foreground">/100</span></div>
         </div>
