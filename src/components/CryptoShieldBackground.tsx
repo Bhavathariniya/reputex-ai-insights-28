@@ -20,7 +20,7 @@ const CryptoShieldBackground: React.FC = () => {
           <Shield className="shield-icon" size={80} />
         </div>
       </div>
-      <style jsx>{`
+      <style>{`
         .shield-pulse-ring {
           position: absolute;
           top: 50%;
