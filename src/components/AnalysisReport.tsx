@@ -1,7 +1,5 @@
-
 import React, { useEffect, useState } from 'react';
 import ScoreCard from '@/components/ScoreCard';
-import SentimentMeter from '@/components/SentimentMeter';
 import { 
   Sparkles, 
   Clock, 
@@ -269,18 +267,6 @@ const AnalysisReport: React.FC<AnalysisReportProps> = ({
           )}
         </div>
       </div>
-      
-      {/* Social Sentiment Meter */}
-      {sentimentData && (
-        <div className="mb-8">
-          <SentimentMeter 
-            sentiment={sentimentData.sentiment} 
-            keywords={sentimentData.keywords}
-            phrases={sentimentData.phrases}
-            sources={sentimentData.sources}
-          />
-        </div>
-      )}
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <ScoreCardWithInfo 

@@ -67,7 +67,7 @@ const Index = () => {
       // Simulate GitHub repo activity
       const repoData = await getRepoActivity("example/repo");
       
-      // Get social sentiment data
+      // Get social sentiment data - we still collect this for scoring even though we don't display the meter
       const sentimentData = await getSocialSentiment(address, network);
       
       // Detect scam indicators
