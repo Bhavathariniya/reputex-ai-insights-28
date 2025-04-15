@@ -3,7 +3,7 @@ import React from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Trash2 } from 'lucide-react';
+import { ArrowRight, Trash2, AlertTriangle, CheckCircle, Shield } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -12,6 +12,8 @@ interface HistoryItemProps {
   trustScore: number;
   timestamp: string;
   network?: string;
+  verdict?: 'Highly Legit' | 'Likely Legit' | 'Likely Risky' | 'High Risk';
+  scamIndicators?: string[];
   onDelete?: (address: string, network: string) => void;
 }
 
@@ -20,6 +22,8 @@ const HistoryItem: React.FC<HistoryItemProps> = ({
   trustScore, 
   timestamp,
   network = 'ethereum',
+  verdict = 'Likely Legit', // Default value
+  scamIndicators = [],
   onDelete
 }) => {
   const scoreColor = 
@@ -43,6 +47,27 @@ const HistoryItem: React.FC<HistoryItemProps> = ({
     optimism: 'Optimism',
   };
   
+  const verdictStyles = {
+    'Highly Legit': {
+      color: 'border-neon-cyan bg-neon-cyan/10 text-neon-cyan',
+      icon: <CheckCircle className="h-3 w-3 mr-1" />
+    },
+    'Likely Legit': {
+      color: 'border-neon-pink bg-neon-pink/10 text-neon-pink',
+      icon: <CheckCircle className="h-3 w-3 mr-1" />
+    },
+    'Likely Risky': {
+      color: 'border-neon-orange bg-neon-orange/10 text-neon-orange',
+      icon: <AlertTriangle className="h-3 w-3 mr-1" />
+    },
+    'High Risk': {
+      color: 'border-neon-red bg-neon-red/10 text-neon-red',
+      icon: <AlertTriangle className="h-3 w-3 mr-1" />
+    }
+  };
+  
+  const verdictStyle = verdictStyles[verdict] || verdictStyles['Likely Legit'];
+  
   const formattedAddress = address.slice(0, 6) + '...' + address.slice(-4);
   const timeAgo = formatDistanceToNow(new Date(timestamp), { addSuffix: true });
   
@@ -63,6 +88,31 @@ const HistoryItem: React.FC<HistoryItemProps> = ({
         <Badge variant="outline" className={`${scoreColor} text-xs px-2 py-0.5`}>
           Score: {trustScore}
         </Badge>
+        
+        <Badge variant="outline" className={verdictStyle.color}>
+          {verdictStyle.icon}
+          {verdict}
+        </Badge>
+        
+        {scamIndicators.length > 0 && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge variant="outline" className="border-neon-red bg-neon-red/10 text-neon-red">
+                  <AlertTriangle className="h-3 w-3 mr-1" />
+                  {scamIndicators.length} {scamIndicators.length === 1 ? 'Warning' : 'Warnings'}
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                <div className="space-y-1">
+                  {scamIndicators.map((indicator, index) => (
+                    <p key={index} className="text-xs">{indicator}</p>
+                  ))}
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
         
         <span className="text-xs text-muted-foreground">
           Analyzed {timeAgo}

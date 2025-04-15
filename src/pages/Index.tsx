@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -14,6 +15,8 @@ import {
   getAIAnalysis,
   checkBlockchainForScore,
   storeScoreOnBlockchain,
+  getSocialSentiment,
+  detectScamIndicators,
 } from '@/lib/api-client';
 
 const Index = () => {
@@ -56,34 +59,41 @@ const Index = () => {
       
       // If no existing score, perform new analysis
       // Fetch wallet transaction data
-      const walletData = await getWalletTransactions(address);
+      const walletData = await getWalletTransactions(address, network);
       
       // Fetch token data
-      const tokenData = await getTokenData(address);
+      const tokenData = await getTokenData(address, network);
       
       // Simulate GitHub repo activity
       const repoData = await getRepoActivity("example/repo");
+      
+      // Get social sentiment data
+      const sentimentData = await getSocialSentiment(address, network);
+      
+      // Detect scam indicators
+      const scamData = await detectScamIndicators(address, tokenData.data, network);
       
       // Aggregate the data
       const aggregatedData = {
         ...walletData.data,
         ...tokenData.data,
         ...repoData.data,
+        ...sentimentData.data,
+        ...scamData.data,
         community_size: "Medium", // Simulated community size
         network: network,
       };
       
-      // Get AI analysis
+      // Get enhanced AI analysis
       const aiAnalysisResponse = await getAIAnalysis(aggregatedData);
       
       if (aiAnalysisResponse.data) {
-        // Enhance with additional scores
+        // Prepare the final analysis data with all scores and indicators
         const enhancedData = {
           ...aiAnalysisResponse.data,
-          community_score: Math.floor(Math.random() * 30) + 50, // Random score between 50-80
-          holder_distribution: Math.floor(Math.random() * 40) + 40, // Random score between 40-80
-          fraud_risk: Math.floor(Math.random() * 30) + 10, // Random score between 10-40
           network: network,
+          sentimentData: aiAnalysisResponse.data.sentiment_data,
+          scamIndicators: aiAnalysisResponse.data.scam_indicators,
         };
         
         // Store the analysis result
@@ -92,7 +102,7 @@ const Index = () => {
         // Store on blockchain
         await storeScoreOnBlockchain(address, enhancedData);
         
-        toast.success('Analysis complete');
+        toast.success('Enhanced analysis complete');
       } else {
         toast.error('Failed to analyze address');
       }
@@ -178,9 +188,13 @@ const Index = () => {
                 community_score: analysis.community_score,
                 holder_distribution: analysis.holder_distribution,
                 fraud_risk: analysis.fraud_risk,
+                social_sentiment: analysis.social_sentiment,
+                confidence_score: analysis.confidence_score,
               }}
               analysis={analysis.analysis}
               timestamp={analysis.timestamp}
+              sentimentData={analysis.sentimentData}
+              scamIndicators={analysis.scamIndicators}
             />
           )}
           
@@ -189,7 +203,7 @@ const Index = () => {
               <div className="glowing-card rounded-xl p-8 text-center">
                 <h3 className="text-2xl font-semibold mb-4">Enter an address to analyze</h3>
                 <p className="text-muted-foreground">
-                  Get comprehensive reputation scores and AI analysis for any blockchain wallet or token address.
+                  Get comprehensive reputation scores, social sentiment analysis, and AI fraud detection for any blockchain wallet or token address.
                 </p>
               </div>
             </div>

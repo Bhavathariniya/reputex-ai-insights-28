@@ -10,7 +10,8 @@ import {
   ShieldX,
   Users,
   Droplet,
-  BarChart2
+  BarChart2,
+  MessageCircle
 } from 'lucide-react';
 
 export enum ScoreLevel {
@@ -22,7 +23,7 @@ export enum ScoreLevel {
 interface ScoreCardProps {
   title: string;
   score: number;
-  type: 'trust' | 'developer' | 'liquidity' | 'community' | 'holders' | 'fraud';
+  type: 'trust' | 'developer' | 'liquidity' | 'community' | 'holders' | 'fraud' | 'sentiment' | 'confidence';
   description?: string;
 }
 
@@ -69,6 +70,12 @@ const ScoreCard: React.FC<ScoreCardProps> = ({ title, score, type, description }
         ) : (
           <AlertTriangle className="h-6 w-6 text-neon-pink" />
         );
+        
+      case 'sentiment':
+        return <MessageCircle className="h-6 w-6 text-neon-purple" />;
+        
+      case 'confidence':
+        return <Shield className="h-6 w-6 text-neon-cyan" />;
         
       default:
         return <AlertTriangle className="h-6 w-6 text-neon-purple" />;
