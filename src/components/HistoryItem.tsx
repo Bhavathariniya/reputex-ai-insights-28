@@ -3,21 +3,24 @@ import React from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface HistoryItemProps {
   address: string;
   trustScore: number;
   timestamp: string;
   network?: string;
+  onDelete?: (address: string, network: string) => void;
 }
 
 const HistoryItem: React.FC<HistoryItemProps> = ({ 
   address, 
   trustScore, 
   timestamp,
-  network = 'ethereum'
+  network = 'ethereum',
+  onDelete
 }) => {
   const scoreColor = 
     trustScore >= 80 ? 'bg-neon-pink/20 text-neon-pink border-neon-pink/40' :
@@ -66,12 +69,33 @@ const HistoryItem: React.FC<HistoryItemProps> = ({
         </span>
       </div>
       
-      <Link to={`/?address=${address}&network=${network}`}>
-        <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80 hover:bg-primary/10">
-          View Analysis
-          <ArrowRight className="ml-2 h-4 w-4" />
-        </Button>
-      </Link>
+      <div className="flex items-center gap-2">
+        <Link to={`/?address=${address}&network=${network}`}>
+          <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80 hover:bg-primary/10">
+            View Analysis
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </Link>
+        
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8 text-muted-foreground hover:text-neon-pink hover:bg-neon-pink/10 rounded-full"
+                onClick={() => onDelete && onDelete(address, network)}
+              >
+                <Trash2 className="h-4 w-4" />
+                <span className="sr-only">Delete</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Delete from history</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
     </div>
   );
 };

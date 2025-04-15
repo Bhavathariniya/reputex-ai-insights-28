@@ -243,3 +243,49 @@ export async function getScoreHistory(): Promise<ApiResponse<any[]>> {
     return { error: "Failed to retrieve score history" };
   }
 }
+
+export async function deleteHistoryItem(address: string, network: string = 'ethereum'): Promise<ApiResponse<boolean>> {
+  try {
+    // Delete from history
+    const historyString = localStorage.getItem('reputex_history') || '[]';
+    let history = JSON.parse(historyString);
+    
+    // Filter out the item to delete
+    history = history.filter((item: any) => 
+      !(item.address === address && item.network === network)
+    );
+    
+    // Save updated history
+    localStorage.setItem('reputex_history', JSON.stringify(history));
+    
+    // Also remove the corresponding score data
+    localStorage.removeItem(`reputex_score_${network}_${address}`);
+    
+    return { data: true };
+  } catch (error) {
+    console.error("Error deleting history item:", error);
+    return { error: "Failed to delete history item" };
+  }
+}
+
+export async function clearAllHistory(): Promise<ApiResponse<boolean>> {
+  try {
+    // Get current history to identify items to remove
+    const historyString = localStorage.getItem('reputex_history') || '[]';
+    const history = JSON.parse(historyString);
+    
+    // Remove all individual score items
+    for (const item of history) {
+      const { address, network = 'ethereum' } = item;
+      localStorage.removeItem(`reputex_score_${network}_${address}`);
+    }
+    
+    // Clear history array
+    localStorage.setItem('reputex_history', '[]');
+    
+    return { data: true };
+  } catch (error) {
+    console.error("Error clearing history:", error);
+    return { error: "Failed to clear history" };
+  }
+}

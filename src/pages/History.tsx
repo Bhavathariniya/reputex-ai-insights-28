@@ -3,37 +3,72 @@ import React, { useEffect, useState } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import HistoryItem from '@/components/HistoryItem';
-import { getScoreHistory } from '@/lib/api-client';
-import { History as HistoryIcon, AlertCircle } from 'lucide-react';
+import { getScoreHistory, deleteHistoryItem, clearAllHistory } from '@/lib/api-client';
+import { History as HistoryIcon, AlertCircle, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 const History = () => {
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchHistory = async () => {
-      try {
-        const response = await getScoreHistory();
-        if (response.data) {
-          // Sort by timestamp, newest first
-          const sortedHistory = [...response.data].sort((a, b) => 
-            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-          );
-          setHistory(sortedHistory);
-        } else {
-          setError('Failed to load history data');
-        }
-      } catch (err) {
-        console.error('Error fetching history:', err);
-        setError('An unexpected error occurred');
-      } finally {
-        setLoading(false);
+  const fetchHistory = async () => {
+    setLoading(true);
+    try {
+      const response = await getScoreHistory();
+      if (response.data) {
+        // Sort by timestamp, newest first
+        const sortedHistory = [...response.data].sort((a, b) => 
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        );
+        setHistory(sortedHistory);
+      } else {
+        setError('Failed to load history data');
       }
-    };
+    } catch (err) {
+      console.error('Error fetching history:', err);
+      setError('An unexpected error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchHistory();
   }, []);
+
+  const handleDeleteItem = async (address: string, network: string) => {
+    try {
+      const response = await deleteHistoryItem(address, network);
+      if (response.data) {
+        toast.success('Item deleted from history');
+        // Refresh the history list
+        fetchHistory();
+      } else {
+        toast.error('Failed to delete item');
+      }
+    } catch (err) {
+      console.error('Error deleting history item:', err);
+      toast.error('An error occurred while deleting');
+    }
+  };
+
+  const handleClearHistory = async () => {
+    try {
+      const response = await clearAllHistory();
+      if (response.data) {
+        toast.success('History cleared successfully');
+        // Refresh the history list
+        fetchHistory();
+      } else {
+        toast.error('Failed to clear history');
+      }
+    } catch (err) {
+      console.error('Error clearing history:', err);
+      toast.error('An error occurred while clearing history');
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -43,9 +78,19 @@ const History = () => {
         <div className="container mx-auto">
           <section className="mb-8 text-center">
             <h1 className="text-4xl font-bold mb-4">Score History</h1>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-muted-foreground max-w-2xl mx-auto mb-4">
               View your previously analyzed wallets and tokens, all securely stored on the blockchain.
             </p>
+            {history.length > 0 && (
+              <Button 
+                variant="outline" 
+                className="border-neon-pink text-neon-pink hover:bg-neon-pink/10 group transition-all duration-300"
+                onClick={handleClearHistory}
+              >
+                <Trash2 className="h-4 w-4 mr-2 group-hover:text-neon-pink transition-colors" />
+                Clear History
+              </Button>
+            )}
           </section>
           
           <section className="max-w-4xl mx-auto">
@@ -68,6 +113,7 @@ const History = () => {
                     trustScore={item.trustScore}
                     timestamp={item.timestamp}
                     network={item.network || 'ethereum'}
+                    onDelete={handleDeleteItem}
                   />
                 ))}
               </div>

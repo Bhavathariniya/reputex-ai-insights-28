@@ -44,7 +44,7 @@ const Index = () => {
     
     try {
       // First check if we already have this score on the blockchain
-      const existingScoreResponse = await checkBlockchainForScore(address);
+      const existingScoreResponse = await checkBlockchainForScore(address, network);
       
       if (existingScoreResponse.data) {
         // Use existing score
