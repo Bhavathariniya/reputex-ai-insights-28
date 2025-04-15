@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -20,7 +21,8 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [analysis, setAnalysis] = useState<any | null>(null);
   const [searchedAddress, setSearchedAddress] = useState<string | null>(null);
-  const [searchedNetwork, setSearchedNetwork] = useState<string>('ethereum');
+  const [searchedNetwork, setSearchedNetwork] = useState<string>('bitcoin'); // Updated default network
+  const [addressType, setAddressType] = useState<'wallet' | 'token' | null>(null);
   const [audioEnabled, setAudioEnabled] = useState<boolean>(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -29,7 +31,7 @@ const Index = () => {
   useEffect(() => {
     const query = new URLSearchParams(location.search);
     const addressParam = query.get('address');
-    const networkParam = query.get('network') || 'ethereum';
+    const networkParam = query.get('network') || 'bitcoin'; // Updated default
     
     if (addressParam) {
       setSearchedAddress(addressParam);
@@ -44,32 +46,44 @@ const Index = () => {
     
     try {
       // First check if we already have this score on the blockchain
-      const existingScoreResponse = await checkBlockchainForScore(address);
+      const existingScoreResponse = await checkBlockchainForScore(address, network);
       
       if (existingScoreResponse.data) {
         // Use existing score
         setAnalysis(existingScoreResponse.data);
-        toast.success('Retrieved existing analysis from blockchain');
+        toast.success(`Retrieved existing analysis from blockchain for ${network}`);
         setIsLoading(false);
+        
+        // Set address type from cache
+        setAddressType(existingScoreResponse.data.is_token ? 'token' : 'wallet');
         return;
       }
       
       // If no existing score, perform new analysis
       // Fetch wallet transaction data
-      const walletData = await getWalletTransactions(address);
+      const walletData = await getWalletTransactions(address, network);
       
       // Fetch token data
-      const tokenData = await getTokenData(address);
+      const tokenData = await getTokenData(address, network);
       
-      // Simulate GitHub repo activity
-      const repoData = await getRepoActivity("example/repo");
+      // Determine if this is a token or wallet based on data received
+      // In a real application, this would be determined by API response
+      const isToken = Math.random() > 0.5; // Simulated for demo
+      setAddressType(isToken ? 'token' : 'wallet');
+      
+      // For token contracts, get GitHub repo activity if available
+      let repoData = { data: null };
+      if (isToken) {
+        repoData = await getRepoActivity("example/repo");
+      }
       
       // Aggregate the data
       const aggregatedData = {
         ...walletData.data,
         ...tokenData.data,
-        ...repoData.data,
-        community_size: "Medium", // Simulated community size
+        ...(repoData.data ? repoData.data : {}),
+        community_size: isToken ? "Medium" : undefined, // Simulated community size for tokens
+        is_token: isToken,
         network: network,
       };
       
@@ -80,8 +94,10 @@ const Index = () => {
         // Enhance with additional scores
         const enhancedData = {
           ...aiAnalysisResponse.data,
-          community_score: Math.floor(Math.random() * 30) + 50, // Random score between 50-80
-          holder_distribution: Math.floor(Math.random() * 40) + 40, // Random score between 40-80
+          is_token: isToken,
+          // Community, holder and fraud risk scores mainly for tokens
+          community_score: isToken ? Math.floor(Math.random() * 30) + 50 : undefined, // Random score between 50-80
+          holder_distribution: isToken ? Math.floor(Math.random() * 40) + 40 : undefined, // Random score between 40-80
           fraud_risk: Math.floor(Math.random() * 30) + 10, // Random score between 10-40
           network: network,
         };
@@ -92,7 +108,7 @@ const Index = () => {
         // Store on blockchain
         await storeScoreOnBlockchain(address, enhancedData);
         
-        toast.success('Analysis complete');
+        toast.success(`Analysis complete for ${network}`);
       } else {
         toast.error('Failed to analyze address');
       }
@@ -139,7 +155,7 @@ const Index = () => {
     <div className="flex flex-col min-h-screen relative overflow-hidden">
       <Navbar />
       
-      <div className="audio-toggle" onClick={toggleAudio}>
+      <div className="audio-toggle absolute top-20 right-4 p-2 rounded-full bg-card/50 backdrop-blur-sm cursor-pointer z-20" onClick={toggleAudio}>
         {audioEnabled ? (
           <Volume2 className="h-5 w-5 text-neon-cyan" />
         ) : (
@@ -157,8 +173,8 @@ const Index = () => {
             <span className="neon-text">ReputeX AI</span>
           </h1>
           
-          <p className="tagline max-w-2xl mx-auto">
-            Web3's AI-Powered Reputation Shield – Spot Scams & Invest Fearlessly.
+          <p className="tagline max-w-2xl mx-auto mb-8">
+            Web3's Multi-Chain AI-Powered Reputation Shield – Spot Scams & Invest Fearlessly.
           </p>
           
           <AddressInput onSubmit={handleSubmit} isLoading={isLoading} />
@@ -170,7 +186,7 @@ const Index = () => {
           {!isLoading && analysis && searchedAddress && (
             <AnalysisReport
               address={searchedAddress}
-              network={searchedNetwork || 'ethereum'}
+              network={searchedNetwork || 'bitcoin'}
               scores={{
                 trust_score: analysis.trust_score,
                 developer_score: analysis.developer_score,
@@ -189,7 +205,8 @@ const Index = () => {
               <div className="glowing-card rounded-xl p-8 text-center">
                 <h3 className="text-2xl font-semibold mb-4">Enter an address to analyze</h3>
                 <p className="text-muted-foreground">
-                  Get comprehensive reputation scores and AI analysis for any blockchain wallet or token address.
+                  Get comprehensive reputation scores and AI analysis for any blockchain wallet or token address
+                  across multiple networks including Bitcoin, Ethereum, L1X, Solana and more.
                 </p>
               </div>
             </div>
