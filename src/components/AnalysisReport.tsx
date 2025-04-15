@@ -1,7 +1,5 @@
-
 import React, { useEffect, useState } from 'react';
 import ScoreCard from '@/components/ScoreCard';
-import PlaceholderCard from '@/components/PlaceholderCard';
 import { 
   Sparkles, 
   Clock, 
@@ -15,20 +13,13 @@ import {
   Info,
   CheckCircle,
   XCircle,
-  Volume2,
-  Bitcoin,
-  Layers,
-  Cpu,
-  Rocket,
-  Zap,
-  Database
+  Volume2
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface AnalysisReportProps {
   address: string;
@@ -47,52 +38,26 @@ interface AnalysisReportProps {
 
 const NetworkBadge = ({ network }: { network: string }) => {
   const networkColors: Record<string, string> = {
-    bitcoin: 'border-[#F7931A] bg-[#F7931A]/10 text-[#F7931A]',
-    l1x: 'border-[#6E59A5] bg-[#6E59A5]/10 text-[#6E59A5]',
     ethereum: 'border-[#627EEA] bg-[#627EEA]/10 text-[#627EEA]',
     binance: 'border-[#F3BA2F] bg-[#F3BA2F]/10 text-[#F3BA2F]',
     polygon: 'border-[#8247E5] bg-[#8247E5]/10 text-[#8247E5]',
     arbitrum: 'border-[#28A0F0] bg-[#28A0F0]/10 text-[#28A0F0]',
     optimism: 'border-[#FF0420] bg-[#FF0420]/10 text-[#FF0420]',
-    solana: 'border-[#14F195] bg-[#14F195]/10 text-[#14F195]',
-    avalanche: 'border-[#E84142] bg-[#E84142]/10 text-[#E84142]',
-    fantom: 'border-[#1969FF] bg-[#1969FF]/10 text-[#1969FF]',
-    base: 'border-[#0052FF] bg-[#0052FF]/10 text-[#0052FF]',
-    zksync: 'border-[#8C8DFC] bg-[#8C8DFC]/10 text-[#8C8DFC]',
   };
 
   const networkNames: Record<string, string> = {
-    bitcoin: 'Bitcoin',
-    l1x: 'L1X Blockchain',
     ethereum: 'Ethereum',
     binance: 'BNB Chain',
     polygon: 'Polygon',
     arbitrum: 'Arbitrum',
     optimism: 'Optimism',
-    solana: 'Solana',
-    avalanche: 'Avalanche',
-    fantom: 'Fantom',
-    base: 'Base',
-    zksync: 'zkSync',
   };
-
-  const networkIcons: Record<string, React.ReactNode> = {
-    bitcoin: <Bitcoin className="h-4 w-4 mr-1" />,
-    l1x: <Layers className="h-4 w-4 mr-1" />,
-    ethereum: <Database className="h-4 w-4 mr-1" />,
-    solana: <Zap className="h-4 w-4 mr-1" />,
-    avalanche: <Rocket className="h-4 w-4 mr-1" />,
-    base: <Cpu className="h-4 w-4 mr-1" />,
-  };
-
-  const icon = networkIcons[network];
 
   return (
     <Badge
       variant="outline"
-      className={`flex items-center ${networkColors[network] || 'border-muted-foreground text-muted-foreground'}`}
+      className={networkColors[network] || 'border-muted-foreground text-muted-foreground'}
     >
-      {icon}
       {networkNames[network] || network}
     </Badge>
   );
@@ -113,18 +78,11 @@ const AnalysisReport: React.FC<AnalysisReportProps> = ({
   
   const getExplorerUrl = () => {
     const explorers: Record<string, string> = {
-      bitcoin: 'https://www.blockchain.com/explorer/addresses/btc/',
-      l1x: 'https://explorer.l1x.io/address/',
       ethereum: 'https://etherscan.io/address/',
       binance: 'https://bscscan.com/address/',
       polygon: 'https://polygonscan.com/address/',
       arbitrum: 'https://arbiscan.io/address/',
       optimism: 'https://optimistic.etherscan.io/address/',
-      solana: 'https://solscan.io/account/',
-      avalanche: 'https://snowtrace.io/address/',
-      fantom: 'https://ftmscan.com/address/',
-      base: 'https://basescan.org/address/',
-      zksync: 'https://explorer.zksync.io/address/',
     };
     
     return (explorers[network] || explorers.ethereum) + address;
@@ -256,21 +214,19 @@ const AnalysisReport: React.FC<AnalysisReportProps> = ({
         </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <ScoreCardWithInfo 
           title="Trust Score" 
           score={scores.trust_score}
           type="trust"
           description={scoreDescriptions.trust}
           icon={<Shield className="h-6 w-6" />}
-          network={network}
         />
         <ScoreCardWithInfo 
           title="Developer Score" 
           score={scores.developer_score}
           type="developer"
           description={scoreDescriptions.developer}
-          network={network}
         />
         <ScoreCardWithInfo 
           title="Liquidity Score" 
@@ -278,69 +234,48 @@ const AnalysisReport: React.FC<AnalysisReportProps> = ({
           type="liquidity"
           description={scoreDescriptions.liquidity}
           icon={<Droplet className="h-6 w-6" />}
-          network={network}
         />
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
-        {scores.community_score !== undefined ? (
-          <ScoreCardWithInfo 
-            title="Community Score" 
-            score={scores.community_score}
-            type="community"
-            description={scoreDescriptions.community}
-            icon={<Users className="h-6 w-6" />}
-            network={network}
-          />
-        ) : (
-          <PlaceholderCard 
-            title="Community Score" 
-            message="Community data not available yet."
-            chainName={network}
-          />
-        )}
-        
-        {scores.holder_distribution !== undefined ? (
-          <ScoreCardWithInfo 
-            title="Holder Distribution" 
-            score={scores.holder_distribution}
-            type="holders"
-            description={scoreDescriptions.holders}
-            icon={<BarChart2 className="h-6 w-6" />}
-            network={network}
-          />
-        ) : (
-          <PlaceholderCard 
-            title="Holder Distribution" 
-            message="Distribution data not available yet."
-            chainName={network}
-          />
-        )}
-        
-        {scores.fraud_risk !== undefined ? (
-          <ScoreCardWithInfo 
-            title="Fraud Risk" 
-            score={100 - scores.fraud_risk}
-            type="fraud"
-            description={scoreDescriptions.fraud}
-            icon={<AlertTriangle className="h-6 w-6" />}
-            invertScore={true}
-            network={network}
-          />
-        ) : (
-          <PlaceholderCard 
-            title="Fraud Risk" 
-            message="Fraud risk assessment not available."
-            chainName={network}
-          />
-        )}
-      </div>
+      {(scores.community_score !== undefined || scores.holder_distribution !== undefined || scores.fraud_risk !== undefined) && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {scores.community_score !== undefined && (
+            <ScoreCardWithInfo 
+              title="Community Score" 
+              score={scores.community_score}
+              type="community"
+              description={scoreDescriptions.community}
+              icon={<Users className="h-6 w-6" />}
+            />
+          )}
+          
+          {scores.holder_distribution !== undefined && (
+            <ScoreCardWithInfo 
+              title="Holder Distribution" 
+              score={scores.holder_distribution}
+              type="holders"
+              description={scoreDescriptions.holders}
+              icon={<BarChart2 className="h-6 w-6" />}
+            />
+          )}
+          
+          {scores.fraud_risk !== undefined && (
+            <ScoreCardWithInfo 
+              title="Fraud Risk" 
+              score={100 - scores.fraud_risk}
+              type="fraud"
+              description={scoreDescriptions.fraud}
+              icon={<AlertTriangle className="h-6 w-6" />}
+              invertScore={true}
+            />
+          )}
+        </div>
+      )}
       
       <div className="glass-card rounded-xl p-6 mb-8">
         <div className="flex items-center gap-2 mb-4">
           <Sparkles className="h-5 w-5 text-primary" />
           <h3 className="text-lg font-semibold">AI Analysis</h3>
-          <NetworkBadge network={network} />
         </div>
         
         <div className="space-y-3 text-muted-foreground">
@@ -360,7 +295,6 @@ interface ScoreCardWithInfoProps {
   description: string;
   icon?: React.ReactNode;
   invertScore?: boolean;
-  network?: string;
 }
 
 const ScoreCardWithInfo: React.FC<ScoreCardWithInfoProps> = ({ 
@@ -369,58 +303,17 @@ const ScoreCardWithInfo: React.FC<ScoreCardWithInfoProps> = ({
   type, 
   description,
   icon,
-  invertScore = false,
-  network
+  invertScore = false
 }) => {
-  const scoreType = type as 'trust' | 'developer' | 'liquidity' | 'community' | 'holders' | 'fraud';
-  
-  // Network icon based on blockchain
-  const getNetworkIcon = () => {
-    switch (network) {
-      case 'bitcoin':
-        return <Bitcoin className="h-4 w-4" />;
-      case 'l1x':
-        return <Layers className="h-4 w-4" />;
-      case 'solana':
-        return <Zap className="h-4 w-4" />;
-      case 'avalanche':
-        return <Rocket className="h-4 w-4" />;
-      case 'base':
-      case 'zksync':
-        return <Cpu className="h-4 w-4" />;
-      default:
-        return null;
-    }
-  };
-  
-  const networkIcon = getNetworkIcon();
+  const scoreType = type as 'trust' | 'developer' | 'liquidity';
   
   return (
     <div className="relative">
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="h-full">
-              <ScoreCard
-                title={title}
-                score={score}
-                type={scoreType}
-                networkIcon={networkIcon}
-                networkName={network}
-              />
-            </div>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>{description}</p>
-            {invertScore && (
-              <p className="text-xs text-muted-foreground mt-1">
-                Higher scores indicate lower risk
-              </p>
-            )}
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-      
+      <ScoreCard
+        title={title}
+        score={score}
+        type={scoreType}
+      />
       <div className="absolute top-2 right-2">
         <HoverCard>
           <HoverCardTrigger asChild>
