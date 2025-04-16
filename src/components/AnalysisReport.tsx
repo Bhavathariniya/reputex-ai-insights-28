@@ -57,19 +57,33 @@ interface AnalysisReportProps {
 
 const NetworkBadge = ({ network }: { network: string }) => {
   const networkColors: Record<string, string> = {
+    bitcoin: 'border-[#F7931A] bg-[#F7931A]/10 text-[#F7931A]',
+    l1x: 'border-[#3D52F4] bg-[#3D52F4]/10 text-[#3D52F4]',
     ethereum: 'border-[#627EEA] bg-[#627EEA]/10 text-[#627EEA]',
     binance: 'border-[#F3BA2F] bg-[#F3BA2F]/10 text-[#F3BA2F]',
     polygon: 'border-[#8247E5] bg-[#8247E5]/10 text-[#8247E5]',
     arbitrum: 'border-[#28A0F0] bg-[#28A0F0]/10 text-[#28A0F0]',
     optimism: 'border-[#FF0420] bg-[#FF0420]/10 text-[#FF0420]',
+    solana: 'border-[#14F195] bg-[#14F195]/10 text-[#14F195]',
+    avalanche: 'border-[#E84142] bg-[#E84142]/10 text-[#E84142]',
+    fantom: 'border-[#1969FF] bg-[#1969FF]/10 text-[#1969FF]',
+    base: 'border-[#0052FF] bg-[#0052FF]/10 text-[#0052FF]',
+    zksync: 'border-[#8C8DFC] bg-[#8C8DFC]/10 text-[#8C8DFC]',
   };
 
   const networkNames: Record<string, string> = {
+    bitcoin: 'Bitcoin',
+    l1x: 'L1X',
     ethereum: 'Ethereum',
     binance: 'BNB Chain',
     polygon: 'Polygon',
     arbitrum: 'Arbitrum',
     optimism: 'Optimism',
+    solana: 'Solana',
+    avalanche: 'Avalanche',
+    fantom: 'Fantom',
+    base: 'Base',
+    zksync: 'zkSync',
   };
 
   return (
@@ -99,11 +113,18 @@ const AnalysisReport: React.FC<AnalysisReportProps> = ({
   
   const getExplorerUrl = () => {
     const explorers: Record<string, string> = {
+      bitcoin: 'https://blockchair.com/bitcoin/address/',
+      l1x: 'https://explorer.l1x.io/address/',
       ethereum: 'https://etherscan.io/address/',
       binance: 'https://bscscan.com/address/',
       polygon: 'https://polygonscan.com/address/',
       arbitrum: 'https://arbiscan.io/address/',
       optimism: 'https://optimistic.etherscan.io/address/',
+      solana: 'https://solana.fm/address/',
+      avalanche: 'https://snowtrace.io/address/',
+      fantom: 'https://ftmscan.com/address/',
+      base: 'https://basescan.org/address/',
+      zksync: 'https://explorer.zksync.io/address/',
     };
     
     return (explorers[network] || explorers.ethereum) + address;
@@ -138,7 +159,6 @@ const AnalysisReport: React.FC<AnalysisReportProps> = ({
     const totalScores = availableScores.length;
     const confidenceScore = scores.confidence_score || Math.floor(Math.random() * 15) + 75; // Default confidence 75-90%
     
-    // Enhanced verdict logic with more categories
     if (fraudRisk > 80 || scoresBelow50 > totalScores / 2 || scamIndicators?.length > 2) {
       return {
         verdict: "High Risk – Caution Advised",

@@ -1,5 +1,5 @@
-
 import { toast } from "sonner";
+import { isContract } from "./chain-detection";
 
 export interface ApiResponse<T> {
   data?: T;
@@ -9,6 +9,14 @@ export interface ApiResponse<T> {
 
 // API endpoints - in a real app, move these to environment variables
 const API_ENDPOINTS = {
+  bitcoin: {
+    explorer: "https://api.blockchair.com/bitcoin/dashboards/address/",
+    price: "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin"
+  },
+  l1x: {
+    explorer: "https://api.l1x.io/v1/address/", // Simulated L1X API
+    price: "https://api.coingecko.com/api/v3/simple/token_price/l1x"
+  },
   ethereum: {
     explorer: "https://api.etherscan.io/api",
     price: "https://api.coingecko.com/api/v3/simple/token_price/ethereum"
@@ -28,6 +36,26 @@ const API_ENDPOINTS = {
   optimism: {
     explorer: "https://api-optimistic.etherscan.io/api",
     price: "https://api.coingecko.com/api/v3/simple/token_price/optimistic-ethereum"
+  },
+  solana: {
+    explorer: "https://api.solana.fm/v0/accounts/",
+    price: "https://api.coingecko.com/api/v3/simple/token_price/solana"
+  },
+  avalanche: {
+    explorer: "https://api.snowtrace.io/api",
+    price: "https://api.coingecko.com/api/v3/simple/token_price/avalanche"
+  },
+  fantom: {
+    explorer: "https://api.ftmscan.com/api",
+    price: "https://api.coingecko.com/api/v3/simple/token_price/fantom"
+  },
+  base: {
+    explorer: "https://api.basescan.org/api",
+    price: "https://api.coingecko.com/api/v3/simple/token_price/base"
+  },
+  zksync: {
+    explorer: "https://api.zksync.io/api",
+    price: "https://api.coingecko.com/api/v3/simple/token_price/zksync"
   }
 };
 
@@ -37,11 +65,18 @@ const SENTIMENT_API_ENDPOINT = "https://api.example.com/sentiment"; // Replace w
 // For this MVP version, we'll use a placeholder API key
 // In production, this should be stored securely in environment variables
 const API_KEYS = {
+  bitcoin: "YOURAPIKEY",
+  l1x: "YOURAPIKEY",
   ethereum: "YOURAPIKEY",
   binance: "YOURAPIKEY",
   polygon: "YOURAPIKEY",
   arbitrum: "YOURAPIKEY",
-  optimism: "YOURAPIKEY"
+  optimism: "YOURAPIKEY",
+  solana: "YOURAPIKEY",
+  avalanche: "YOURAPIKEY",
+  fantom: "YOURAPIKEY",
+  base: "YOURAPIKEY",
+  zksync: "YOURAPIKEY"
 };
 
 // Utility function to fetch data from APIs
@@ -63,31 +98,129 @@ export async function fetchData<T>(url: string): Promise<ApiResponse<T>> {
   }
 }
 
-// Enhanced blockchain Explorer API functions
+// Enhanced blockchain Explorer API functions with multi-chain support
 export async function getWalletTransactions(address: string, network: string = 'ethereum'): Promise<ApiResponse<any>> {
+  // Check if this is a contract or wallet
+  const isAddressContract = await isContract(address, network);
+  
   // In a real implementation, this would connect to the appropriate blockchain explorer API
   // For MVP, we'll simulate the response with enhanced on-chain metrics
-  return simulateApiCall({
-    status: "1",
-    message: "OK",
-    result: {
-      wallet_age: `${Math.floor(Math.random() * 5) + 1} years`,
-      total_txns: Math.floor(Math.random() * 2000) + 100,
-      num_contracts: Math.floor(Math.random() * 10) + 1,
-      avg_balance: `${Math.floor(Math.random() * 10000)} USDT`,
-      tx_frequency: `${Math.floor(Math.random() * 50) + 5}/week`,
+  
+  // Different metrics for different chains
+  const mockData: Record<string, any> = {
+    bitcoin: {
+      wallet_age: `${Math.floor(Math.random() * 5) + 3} years`,
+      total_txns: Math.floor(Math.random() * 3000) + 500,
+      num_utxos: Math.floor(Math.random() * 50) + 5,
+      avg_balance: `${(Math.random() * 2).toFixed(4)} BTC`,
+      tx_frequency: `${Math.floor(Math.random() * 30) + 2}/month`,
       unusual_tx_patterns: Math.random() > 0.8,
-      contract_verified: Math.random() > 0.3,
+      is_contract: false, // Bitcoin doesn't have smart contracts in the same way
       network: network,
+      address_type: "wallet",
+    },
+    solana: {
+      wallet_age: `${Math.floor(Math.random() * 2) + 1} years`,
+      total_txns: Math.floor(Math.random() * 5000) + 100,
+      num_contracts: isAddressContract ? Math.floor(Math.random() * 10) + 1 : 0,
+      avg_balance: `${Math.floor(Math.random() * 1000)} SOL`,
+      tx_frequency: `${Math.floor(Math.random() * 100) + 10}/week`,
+      unusual_tx_patterns: Math.random() > 0.8,
+      contract_verified: isAddressContract ? Math.random() > 0.3 : null,
+      network: network,
+      address_type: isAddressContract ? "contract" : "wallet",
+    },
+    l1x: {
+      wallet_age: `${Math.floor(Math.random() * 1) + 1} years`, // L1X is newer
+      total_txns: Math.floor(Math.random() * 1000) + 50,
+      num_contracts: isAddressContract ? Math.floor(Math.random() * 5) + 1 : 0,
+      avg_balance: `${Math.floor(Math.random() * 5000)} L1X`,
+      tx_frequency: `${Math.floor(Math.random() * 80) + 10}/week`,
+      unusual_tx_patterns: Math.random() > 0.8,
+      contract_verified: isAddressContract ? Math.random() > 0.3 : null,
+      network: network,
+      address_type: isAddressContract ? "contract" : "wallet",
     }
-  });
+  };
+  
+  // Default EVM chain data (for Ethereum, Binance, Polygon, etc.)
+  const evmData = {
+    wallet_age: `${Math.floor(Math.random() * 5) + 1} years`,
+    total_txns: Math.floor(Math.random() * 2000) + 100,
+    num_contracts: isAddressContract ? Math.floor(Math.random() * 10) + 1 : 0,
+    avg_balance: `${Math.floor(Math.random() * 10000)} USDT`,
+    tx_frequency: `${Math.floor(Math.random() * 50) + 5}/week`,
+    unusual_tx_patterns: Math.random() > 0.8,
+    contract_verified: isAddressContract ? Math.random() > 0.3 : null,
+    network: network,
+    address_type: isAddressContract ? "contract" : "wallet",
+  };
+  
+  // Use chain-specific data if available, otherwise use EVM default
+  const responseData = mockData[network] || evmData;
+  
+  return simulateApiCall(responseData);
 }
 
-// Enhanced token data API functions
+// Enhanced token data API functions with multi-chain support
 export async function getTokenData(tokenAddress: string, network: string = 'ethereum'): Promise<ApiResponse<any>> {
   // In a real implementation, this would connect to CoinGecko or similar API
   // For MVP, we'll simulate the response with enhanced metrics
-  return simulateApiCall({
+  
+  // Check if this is a contract first
+  const isAddressContract = await isContract(tokenAddress, network);
+  
+  // If not a contract, return minimal data
+  if (!isAddressContract && network !== 'bitcoin') {
+    return simulateApiCall({
+      is_token: false,
+      network: network,
+      address_type: "wallet",
+      message: "Address is not a token contract"
+    });
+  }
+  
+  // Different metrics for different chains
+  const mockData: Record<string, any> = {
+    bitcoin: {
+      // Bitcoin doesn't have tokens in the traditional sense
+      is_token: false,
+      network: network,
+      address_type: "wallet",
+      message: "Bitcoin addresses don't represent tokens"
+    },
+    solana: {
+      liquidity: ["Low", "Medium", "High"][Math.floor(Math.random() * 3)],
+      price_change_24h: (Math.random() * 20 - 10).toFixed(2) + "%",
+      volume_24h: `$${Math.floor(Math.random() * 1000000)}`,
+      market_cap: `$${Math.floor(Math.random() * 10000000)}`,
+      token_age: `${Math.floor(Math.random() * 18) + 1} months`,
+      top_holder_concentration: `${Math.floor(Math.random() * 40) + 10}%`,
+      lp_locked: Math.random() > 0.3,
+      similar_contracts: Math.floor(Math.random() * 5),
+      is_token: true,
+      token_standard: "SPL",
+      network: network,
+      address_type: "contract"
+    },
+    l1x: {
+      liquidity: ["Low", "Medium", "High"][Math.floor(Math.random() * 3)],
+      price_change_24h: (Math.random() * 20 - 10).toFixed(2) + "%",
+      volume_24h: `$${Math.floor(Math.random() * 500000)}`,
+      market_cap: `$${Math.floor(Math.random() * 5000000)}`,
+      token_age: `${Math.floor(Math.random() * 6) + 1} months`, // L1X is newer
+      top_holder_concentration: `${Math.floor(Math.random() * 40) + 10}%`,
+      lp_locked: Math.random() > 0.3,
+      similar_contracts: Math.floor(Math.random() * 5),
+      is_token: true,
+      token_standard: "L1X",
+      network: network,
+      address_type: "contract"
+    }
+  };
+  
+  // Default EVM token data
+  const evmData = {
     liquidity: ["Low", "Medium", "High"][Math.floor(Math.random() * 3)],
     price_change_24h: (Math.random() * 20 - 10).toFixed(2) + "%",
     volume_24h: `$${Math.floor(Math.random() * 1000000)}`,
@@ -96,8 +229,21 @@ export async function getTokenData(tokenAddress: string, network: string = 'ethe
     top_holder_concentration: `${Math.floor(Math.random() * 40) + 10}%`,
     lp_locked: Math.random() > 0.3,
     similar_contracts: Math.floor(Math.random() * 5),
+    is_token: true,
+    token_standard: network === 'ethereum' ? 'ERC20' : 
+                    network === 'binance' ? 'BEP20' : 
+                    network === 'polygon' ? 'ERC20 (Polygon)' :
+                    network === 'avalanche' ? 'AVAX C-Chain' :
+                    network === 'fantom' ? 'FTM' :
+                    'EVM Compatible',
     network: network,
-  });
+    address_type: "contract"
+  };
+  
+  // Use chain-specific data if available, otherwise use EVM default
+  const responseData = mockData[network] || evmData;
+  
+  return simulateApiCall(responseData);
 }
 
 // Enhanced GitHub API functions
@@ -210,7 +356,8 @@ export async function getSocialSentiment(address: string, network: string = 'eth
     },
     sentiment_score: Math.floor(Math.random() * 100),
     fud_detection: sentiment === 'negative' ? 'high' : sentiment === 'mixed' ? 'medium' : 'low',
-    social_mentions: twitterCount + redditCount + telegramCount + discordCount
+    social_mentions: twitterCount + redditCount + telegramCount + discordCount,
+    network: network
   });
 }
 
@@ -218,6 +365,40 @@ export async function getSocialSentiment(address: string, network: string = 'eth
 export async function detectScamIndicators(address: string, tokenData: any, network: string = 'ethereum'): Promise<ApiResponse<any>> {
   // In a real implementation, this would use various heuristics to detect scam patterns
   // For MVP, we'll simulate the response
+  
+  // If the address is not a token contract, return minimal data
+  if (tokenData && tokenData.is_token === false) {
+    return simulateApiCall({
+      address: address,
+      network: network,
+      scam_indicators: [],
+      risk_score: 10, // Low risk for non-token addresses
+      confidence: 95, // High confidence
+    });
+  }
+  
+  // Chain-specific scam indicators
+  const chainSpecificIndicators = {
+    solana: [
+      {
+        label: "Metadata Manipulation",
+        description: "Token metadata appears to be manipulated to mimic another project",
+        probability: Math.random()
+      },
+      {
+        label: "Program Authority Risks",
+        description: "The program authority has extensive control rights over the token",
+        probability: Math.random()
+      }
+    ],
+    l1x: [
+      {
+        label: "Early Stage Risk",
+        description: "This project is very new and lacks established history",
+        probability: Math.random() * 0.7 + 0.3 // Higher probability for new chains
+      }
+    ]
+  };
   
   const possibleIndicators = [
     {
@@ -261,6 +442,27 @@ export async function detectScamIndicators(address: string, tokenData: any, netw
       probability: Math.random()
     }
   ];
+  
+  // Add chain-specific indicators if available
+  if (chainSpecificIndicators[network as keyof typeof chainSpecificIndicators]) {
+    possibleIndicators.push(...chainSpecificIndicators[network as keyof typeof chainSpecificIndicators]);
+  }
+  
+  // Bitcoin doesn't have smart contract scam indicators
+  if (network === 'bitcoin') {
+    possibleIndicators = [
+      {
+        label: "Potential Mixing Activity",
+        description: "Address shows patterns consistent with coin mixing services",
+        probability: Math.random()
+      },
+      {
+        label: "Darknet Market Association",
+        description: "Address has potential connections to known darknet markets",
+        probability: Math.random()
+      }
+    ];
+  }
   
   // Filter out indicators with low probability
   const threshold = 0.7; // 70% probability threshold
@@ -306,6 +508,14 @@ export async function getAIAnalysis(aggregatedData: any): Promise<ApiResponse<an
   
   // Different analysis texts based on network with enhanced content
   const analysisTexts: Record<string, string[]> = {
+    bitcoin: [
+      "Analysis of this Bitcoin address reveals a pattern of regular transactions consistent with legitimate use. The address has a moderate age and transaction volume, suggesting established use rather than new or suspicious activity. No unusual patterns detected in transaction timing or value distribution.",
+      "This Bitcoin address shows transaction patterns typical of a long-term holder with occasional outflows. Address age and transaction cadence indicate normal usage patterns with no red flags. The transaction volumes are consistent with personal rather than institutional use."
+    ],
+    l1x: [
+      "The L1X blockchain address demonstrates promising on-chain metrics with healthy transaction volume despite being on a newer network. The address shows regular activity patterns consistent with legitimate use cases. As L1X ecosystem matures, more historical data will become available to enhance confidence.",
+      "Analysis of this L1X address indicates legitimate activity with regular transaction patterns. While L1X is a newer blockchain with less historical data, the activity metrics for this address fall within expected parameters for normal usage. No suspicious patterns detected."
+    ],
     ethereum: [
       "The Ethereum address shows consistent transaction history and good liquidity, indicating reliability and operational stability. Developer activity is moderate but steady. Based on transaction volume and age, this appears to be an established project with reasonable trust indicators. Social sentiment analysis reveals generally positive community perception with occasional concerns about development pace.",
       "Analysis of this Ethereum address reveals strong developer commitment with frequent commits and updates. Liquidity levels are adequate for current market cap. The address has a solid transaction history with diverse interactions, suggesting legitimate operations. On-chain metrics show healthy holder distribution without concerning concentration patterns. Community sentiment is mixed but trending positive over the last 30 days."
@@ -325,10 +535,30 @@ export async function getAIAnalysis(aggregatedData: any): Promise<ApiResponse<an
     optimism: [
       "The Optimism address shows healthy transaction patterns and active usage. Developer commitment appears strong with regular updates and improvements. Market liquidity is sufficient for current trading volume. Social sentiment analysis shows growing community support with positive mentions across multiple platforms. Wallet distribution metrics indicate a healthy ecosystem without concerning whale concentration.",
       "Analysis of this Optimism token reveals stable growth metrics and reasonable holder distribution. Contract security appears satisfactory and the project demonstrates signs of long-term viability. Social media sentiment analysis shows predominantly positive community perception with occasional questions about roadmap timelines. GitHub activity indicates an active development team with regular contributions."
+    ],
+    solana: [
+      "This Solana address exhibits strong transaction metrics and active engagement with the ecosystem. Program validation indicates proper development practices. SPL token standards are correctly implemented, and token distribution appears healthy with no concerning concentration patterns. Social sentiment is generally positive with strong community engagement across platforms.",
+      "Analysis of this Solana token shows healthy trading volume and liquidity metrics. Developer activity is consistent with regular program updates. Social reputation is generally positive with active community engagement. The contract shows no signs of typical scam patterns or manipulative features. Transaction history reveals organic growth patterns."
+    ],
+    avalanche: [
+      "The Avalanche address demonstrates consistent transaction patterns and healthy activity levels. Contract interactions follow expected patterns, and token distribution metrics indicate a well-distributed supply. Social sentiment analysis shows moderate positive perception with some questions about development timelines. Overall metrics suggest a legitimate project with adequate transparency.",
+      "This Avalanche token shows reasonable liquidity and trading volume metrics. Developer engagement appears consistent with regular updates to the protocol. Community sentiment is cautiously optimistic with some concerns about competitive positioning. Contract analysis reveals proper implementation of security best practices without common vulnerabilities."
+    ],
+    fantom: [
+      "Analysis of this Fantom address reveals consistent transaction patterns and healthy interaction with the ecosystem. Developer activity shows regular engagement, and contract verification status appears proper. Social sentiment is generally positive with an active community. Token distribution metrics show reasonable diversification without concerning whale concentration.",
+      "The Fantom token demonstrates reasonable liquidity metrics and trading patterns consistent with organic activity. Developer commitment appears solid with regular updates. Community sentiment is predominantly positive with active engagement across platforms. Contract analysis shows proper implementation of security best practices."
+    ],
+    base: [
+      "This Base address shows healthy transaction metrics despite operating on a newer L2 solution. Activity patterns indicate legitimate usage and proper integration with the ecosystem. Developer engagement appears consistent, and community sentiment is generally positive with growing adoption. Contract security measures appear properly implemented.",
+      "Analysis of this Base token reveals promising metrics with healthy trading volume for a newer L2 ecosystem. Developer activity is consistent with regular updates. Community sentiment is positive with particular enthusiasm about the L2 scaling benefits. Contract implementation follows security best practices without concerning patterns."
+    ],
+    zksync: [
+      "The zkSync address demonstrates consistent transaction patterns with healthy interaction frequency. Protocol integration appears properly implemented, and activity metrics indicate legitimate usage patterns. Developer engagement is active, and community sentiment is generally positive with enthusiasm about the scaling technology.",
+      "This zkSync token shows promising metrics with good trading volume considering the ecosystem's maturity stage. Developer activity shows regular updates and proper implementation of the protocol's features. Community sentiment is predominantly positive with strong technical appreciation. Contract analysis indicates proper security measures."
     ]
   };
   
-  // Select an analysis text based on network, or default to ethereum
+  // Fallback to Ethereum analysis if the network isn't in our list
   const networkTexts = analysisTexts[network] || analysisTexts.ethereum;
   const analysisIndex = Math.floor(Math.random() * networkTexts.length);
   

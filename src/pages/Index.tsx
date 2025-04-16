@@ -18,6 +18,7 @@ import {
   getSocialSentiment,
   detectScamIndicators,
 } from '@/lib/api-client';
+import { isContract } from '@/lib/chain-detection';
 
 const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -25,6 +26,7 @@ const Index = () => {
   const [searchedAddress, setSearchedAddress] = useState<string | null>(null);
   const [searchedNetwork, setSearchedNetwork] = useState<string>('ethereum');
   const [audioEnabled, setAudioEnabled] = useState<boolean>(false);
+  const [addressType, setAddressType] = useState<'wallet' | 'contract' | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -54,20 +56,27 @@ const Index = () => {
         setAnalysis(existingScoreResponse.data);
         toast.success('Retrieved existing analysis from blockchain');
         setIsLoading(false);
+        
+        // Set the address type based on the stored data
+        setAddressType(existingScoreResponse.data.address_type || null);
         return;
       }
       
       // If no existing score, perform new analysis
+      // First determine if this is a contract or wallet
+      const isContractAddress = await isContract(address, network);
+      setAddressType(isContractAddress ? 'contract' : 'wallet');
+      
       // Fetch wallet transaction data
       const walletData = await getWalletTransactions(address, network);
       
-      // Fetch token data
+      // Fetch token data (if it's a contract)
       const tokenData = await getTokenData(address, network);
       
-      // Simulate GitHub repo activity
+      // Simulate GitHub repo activity (relevant mainly for contracts/tokens)
       const repoData = await getRepoActivity("example/repo");
       
-      // Get social sentiment data - we still collect this for scoring even though we don't display the meter
+      // Get social sentiment data
       const sentimentData = await getSocialSentiment(address, network);
       
       // Detect scam indicators
@@ -82,6 +91,7 @@ const Index = () => {
         ...scamData.data,
         community_size: "Medium", // Simulated community size
         network: network,
+        address_type: isContractAddress ? 'contract' : 'wallet',
       };
       
       // Get enhanced AI analysis
@@ -92,6 +102,7 @@ const Index = () => {
         const enhancedData = {
           ...aiAnalysisResponse.data,
           network: network,
+          address_type: isContractAddress ? 'contract' : 'wallet',
           sentimentData: aiAnalysisResponse.data.sentiment_data,
           scamIndicators: aiAnalysisResponse.data.scam_indicators,
         };
@@ -102,7 +113,8 @@ const Index = () => {
         // Store on blockchain
         await storeScoreOnBlockchain(address, enhancedData);
         
-        toast.success('Enhanced analysis complete');
+        const addressTypeText = isContractAddress ? 'contract' : 'wallet';
+        toast.success(`Enhanced analysis complete for ${network} ${addressTypeText}`);
       } else {
         toast.error('Failed to analyze address');
       }
@@ -168,7 +180,7 @@ const Index = () => {
           </h1>
           
           <p className="tagline max-w-2xl mx-auto">
-            Web3's AI-Powered Reputation Shield – Spot Scams & Invest Fearlessly.
+            Web3's Multi-Chain AI-Powered Reputation Shield – Detect Scams & Invest Fearlessly Across All Major Blockchains.
           </p>
           
           <AddressInput onSubmit={handleSubmit} isLoading={isLoading} />
@@ -203,7 +215,7 @@ const Index = () => {
               <div className="glowing-card rounded-xl p-8 text-center">
                 <h3 className="text-2xl font-semibold mb-4">Enter an address to analyze</h3>
                 <p className="text-muted-foreground">
-                  Get comprehensive reputation scores, social sentiment analysis, and AI fraud detection for any blockchain wallet or token address.
+                  Get comprehensive reputation scores, social sentiment analysis, and AI fraud detection for any blockchain wallet or token address across 12 major blockchains.
                 </p>
               </div>
             </div>
