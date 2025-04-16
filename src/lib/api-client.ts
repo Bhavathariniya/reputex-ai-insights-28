@@ -397,10 +397,23 @@ export async function detectScamIndicators(address: string, tokenData: any, netw
         description: "This project is very new and lacks established history",
         probability: Math.random() * 0.7 + 0.3 // Higher probability for new chains
       }
+    ],
+    bitcoin: [
+      {
+        label: "Potential Mixing Activity",
+        description: "Address shows patterns consistent with coin mixing services",
+        probability: Math.random()
+      },
+      {
+        label: "Darknet Market Association",
+        description: "Address has potential connections to known darknet markets",
+        probability: Math.random()
+      }
     ]
   };
   
-  const possibleIndicators = [
+  // Define standard EVM indicators
+  const standardIndicators = [
     {
       label: "Honeypot Function",
       description: "Contract contains code that may prevent selling tokens once purchased",
@@ -443,25 +456,17 @@ export async function detectScamIndicators(address: string, tokenData: any, netw
     }
   ];
   
-  // Add chain-specific indicators if available
-  if (chainSpecificIndicators[network as keyof typeof chainSpecificIndicators]) {
-    possibleIndicators.push(...chainSpecificIndicators[network as keyof typeof chainSpecificIndicators]);
-  }
-  
-  // Bitcoin doesn't have smart contract scam indicators
+  // Choose the appropriate indicators based on network
+  let possibleIndicators;
   if (network === 'bitcoin') {
-    possibleIndicators = [
-      {
-        label: "Potential Mixing Activity",
-        description: "Address shows patterns consistent with coin mixing services",
-        probability: Math.random()
-      },
-      {
-        label: "Darknet Market Association",
-        description: "Address has potential connections to known darknet markets",
-        probability: Math.random()
-      }
-    ];
+    possibleIndicators = chainSpecificIndicators.bitcoin || [];
+  } else {
+    possibleIndicators = [...standardIndicators];
+    
+    // Add chain-specific indicators if available
+    if (chainSpecificIndicators[network as keyof typeof chainSpecificIndicators]) {
+      possibleIndicators.push(...chainSpecificIndicators[network as keyof typeof chainSpecificIndicators]);
+    }
   }
   
   // Filter out indicators with low probability
@@ -529,7 +534,7 @@ export async function getAIAnalysis(aggregatedData: any): Promise<ApiResponse<an
       "Analysis of this Polygon token reveals a healthy trading volume and reasonable market depth. The development team appears active with regular updates. Community growth metrics suggest increasing adoption. Social media sentiment is predominantly positive with some isolated concerns about competition in the sector. Contract analysis indicates proper security measures are in place."
     ],
     arbitrum: [
-      "This Arbitrum address shows promising metrics with good transaction volume and regular activity. Developer engagement is above average and liquidity ratios indicate healthy market participation. Social sentiment across platforms is moderately positive with notable enthusiasm on Discord. Holder distribution shows a healthy ecosystem without concerning centralization.",
+      "This Arbitrum address shows promising metrics with good transaction volume and regular activity. Developer commitment appears strong with regular updates and improvements. Market liquidity is sufficient for current trading volume. Social sentiment across platforms is moderately positive with notable enthusiasm on Discord. Holder distribution shows a healthy ecosystem without concerning centralization.",
       "The Arbitrum token demonstrates prudent treasury management and reasonable liquidity metrics. Code quality appears solid based on contract analysis, and community sentiment is generally positive. Social analysis reveals some temporary FUD that appears to be driven by market conditions rather than project-specific concerns. Transaction patterns show organic trading without manipulation indicators."
     ],
     optimism: [
