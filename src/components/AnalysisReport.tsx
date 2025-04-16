@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import ScoreCard from '@/components/ScoreCard';
+import TokenAnalysis from '@/components/TokenAnalysis';
 import { 
   Sparkles, 
   Clock, 
@@ -22,6 +23,7 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/h
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { analyzeTokenSecurity } from '@/lib/chain-detection';
 
 interface AnalysisReportProps {
   address: string;
@@ -108,6 +110,8 @@ const AnalysisReport: React.FC<AnalysisReportProps> = ({
   const formattedAddress = address.slice(0, 6) + '...' + address.slice(-4);
   const timeAgo = formatDistanceToNow(new Date(timestamp), { addSuffix: true });
   const [audioPlayed, setAudioPlayed] = useState(false);
+  const [tokenSecurityData, setTokenSecurityData] = useState<any>(null);
+  const [isTokenAnalysisLoading, setIsTokenAnalysisLoading] = useState(false);
   
   const sentences = analysis.split('. ').filter(Boolean);
   
@@ -214,6 +218,24 @@ const AnalysisReport: React.FC<AnalysisReportProps> = ({
     }
   }, [verdictInfo.audioFile, audioPlayed]);
   
+  useEffect(() => {
+    async function fetchTokenAnalysis() {
+      if (address && network) {
+        setIsTokenAnalysisLoading(true);
+        try {
+          const securityData = await analyzeTokenSecurity(address, network);
+          setTokenSecurityData(securityData);
+        } catch (error) {
+          console.error("Error fetching token security analysis:", error);
+        } finally {
+          setIsTokenAnalysisLoading(false);
+        }
+      }
+    }
+    
+    fetchTokenAnalysis();
+  }, [address, network]);
+  
   return (
     <div className="w-full max-w-4xl mx-auto animate-fade-in">
       <div className="bg-muted/30 backdrop-blur-sm p-4 rounded-lg mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -287,6 +309,21 @@ const AnalysisReport: React.FC<AnalysisReportProps> = ({
           )}
         </div>
       </div>
+      
+      {isTokenAnalysisLoading ? (
+        <div className="w-full p-8 flex items-center justify-center">
+          <div className="animate-pulse flex flex-col items-center">
+            <div className="h-10 w-64 bg-muted rounded mb-4"></div>
+            <div className="h-4 w-48 bg-muted rounded"></div>
+          </div>
+        </div>
+      ) : tokenSecurityData && (
+        <TokenAnalysis 
+          address={address}
+          network={network}
+          tokenData={tokenSecurityData}
+        />
+      )}
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <ScoreCardWithInfo 

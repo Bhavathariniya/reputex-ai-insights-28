@@ -18,7 +18,7 @@ import {
   getSocialSentiment,
   detectScamIndicators,
 } from '@/lib/api-client';
-import { isContract } from '@/lib/chain-detection';
+import { isContract, detectBlockchain } from '@/lib/chain-detection';
 
 const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -27,6 +27,7 @@ const Index = () => {
   const [searchedNetwork, setSearchedNetwork] = useState<string>('ethereum');
   const [audioEnabled, setAudioEnabled] = useState<boolean>(false);
   const [addressType, setAddressType] = useState<'wallet' | 'contract' | null>(null);
+  const [isAutoDetecting, setIsAutoDetecting] = useState<boolean>(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -43,13 +44,40 @@ const Index = () => {
     }
   }, [location]);
 
+  const autoDetectNetwork = async (address: string): Promise<string> => {
+    setIsAutoDetecting(true);
+    try {
+      toast.info("Detecting blockchain network...");
+      const detectedNetwork = await detectBlockchain(address);
+      if (detectedNetwork) {
+        toast.success(`Detected network: ${detectedNetwork}`);
+        return detectedNetwork;
+      } else {
+        toast.warning("Could not detect network. Defaulting to Ethereum.");
+        return 'ethereum';
+      }
+    } catch (error) {
+      console.error("Error detecting network:", error);
+      toast.error("Network detection failed. Defaulting to Ethereum.");
+      return 'ethereum';
+    } finally {
+      setIsAutoDetecting(false);
+    }
+  };
+
   const handleAddressSearch = async (address: string, network: string) => {
     setIsLoading(true);
     setAnalysis(null);
     
+    // Auto-detect network if set to 'auto'
+    let resolvedNetwork = network;
+    if (network === 'auto') {
+      resolvedNetwork = await autoDetectNetwork(address);
+    }
+    
     try {
       // First check if we already have this score on the blockchain
-      const existingScoreResponse = await checkBlockchainForScore(address, network);
+      const existingScoreResponse = await checkBlockchainForScore(address, resolvedNetwork);
       
       if (existingScoreResponse.data) {
         // Use existing score
@@ -64,23 +92,23 @@ const Index = () => {
       
       // If no existing score, perform new analysis
       // First determine if this is a contract or wallet
-      const isContractAddress = await isContract(address, network);
+      const isContractAddress = await isContract(address, resolvedNetwork);
       setAddressType(isContractAddress ? 'contract' : 'wallet');
       
       // Fetch wallet transaction data
-      const walletData = await getWalletTransactions(address, network);
+      const walletData = await getWalletTransactions(address, resolvedNetwork);
       
       // Fetch token data (if it's a contract)
-      const tokenData = await getTokenData(address, network);
+      const tokenData = await getTokenData(address, resolvedNetwork);
       
       // Simulate GitHub repo activity (relevant mainly for contracts/tokens)
       const repoData = await getRepoActivity("example/repo");
       
       // Get social sentiment data
-      const sentimentData = await getSocialSentiment(address, network);
+      const sentimentData = await getSocialSentiment(address, resolvedNetwork);
       
       // Detect scam indicators
-      const scamData = await detectScamIndicators(address, tokenData.data, network);
+      const scamData = await detectScamIndicators(address, tokenData.data, resolvedNetwork);
       
       // Aggregate the data
       const aggregatedData = {
@@ -90,7 +118,7 @@ const Index = () => {
         ...sentimentData.data,
         ...scamData.data,
         community_size: "Medium", // Simulated community size
-        network: network,
+        network: resolvedNetwork,
         address_type: isContractAddress ? 'contract' : 'wallet',
       };
       
@@ -101,7 +129,7 @@ const Index = () => {
         // Prepare the final analysis data with all scores and indicators
         const enhancedData = {
           ...aiAnalysisResponse.data,
-          network: network,
+          network: resolvedNetwork,
           address_type: isContractAddress ? 'contract' : 'wallet',
           sentimentData: aiAnalysisResponse.data.sentiment_data,
           scamIndicators: aiAnalysisResponse.data.scam_indicators,
@@ -114,7 +142,7 @@ const Index = () => {
         await storeScoreOnBlockchain(address, enhancedData);
         
         const addressTypeText = isContractAddress ? 'contract' : 'wallet';
-        toast.success(`Enhanced analysis complete for ${network} ${addressTypeText}`);
+        toast.success(`Enhanced analysis complete for ${resolvedNetwork} ${addressTypeText}`);
       } else {
         toast.error('Failed to analyze address');
       }
@@ -183,13 +211,13 @@ const Index = () => {
             Web3's Multi-Chain AI-Powered Reputation Shield – Detect Scams & Invest Fearlessly Across All Major Blockchains.
           </p>
           
-          <AddressInput onSubmit={handleSubmit} isLoading={isLoading} />
+          <AddressInput onSubmit={handleSubmit} isLoading={isLoading || isAutoDetecting} />
         </section>
         
         <section className="container mx-auto">
-          {isLoading && <LoadingAnimation />}
+          {(isLoading || isAutoDetecting) && <LoadingAnimation />}
           
-          {!isLoading && analysis && searchedAddress && (
+          {!isLoading && !isAutoDetecting && analysis && searchedAddress && (
             <AnalysisReport
               address={searchedAddress}
               network={searchedNetwork || 'ethereum'}
@@ -210,12 +238,12 @@ const Index = () => {
             />
           )}
           
-          {!isLoading && !analysis && (
+          {!isLoading && !isAutoDetecting && !analysis && (
             <div className="max-w-4xl mx-auto mt-10">
               <div className="glowing-card rounded-xl p-8 text-center">
                 <h3 className="text-2xl font-semibold mb-4">Enter an address to analyze</h3>
                 <p className="text-muted-foreground">
-                  Get comprehensive reputation scores, social sentiment analysis, and AI fraud detection for any blockchain wallet or token address across 12 major blockchains.
+                  Get comprehensive reputation scores, security analysis, and AI fraud detection for any blockchain wallet or token address across 12 major blockchains.
                 </p>
               </div>
             </div>
