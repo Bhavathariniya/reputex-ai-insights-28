@@ -25,7 +25,8 @@ import {
   Calendar,
   User,
   Copy,
-  Search
+  Search,
+  Tag
 } from 'lucide-react';
 import {
   Card,

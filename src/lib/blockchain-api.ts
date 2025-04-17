@@ -1,8 +1,23 @@
 
 import { toast } from 'sonner';
 
+// Define more specific types for our API configurations
+type EtherscanStyleConfig = {
+  apiKey: string;
+  apiUrl: string;
+  customRpc?: boolean;
+};
+
+type CustomRpcConfig = {
+  apiUrl: string;
+  customRpc: boolean;
+  apiKey?: string;
+};
+
+type ApiConfig = EtherscanStyleConfig | CustomRpcConfig;
+
 // API configuration for different blockchains
-const API_CONFIG = {
+const API_CONFIG: Record<string, ApiConfig> = {
   ethereum: {
     apiKey: 'VZFDUWB3YGQ1YCDKTCU1D6DDSS',
     apiUrl: 'https://api.etherscan.io/api'
@@ -60,14 +75,24 @@ const isContractAddress = async (address: string, network: string): Promise<bool
   try {
     // For EVM chains
     if (['ethereum', 'binance', 'avalanche', 'arbitrum', 'optimism', 'polygon', 'fantom'].includes(network)) {
-      const config = API_CONFIG[network as keyof typeof API_CONFIG];
+      const config = API_CONFIG[network];
       if (!config) return false;
       
-      const response = await fetch(`${config.apiUrl}?module=proxy&action=eth_getCode&address=${address}&apikey=${config?.apiKey}`);
-      const data = await response.json();
+      // Type guard to check if we have an Etherscan-style API with apiKey
+      if ('apiKey' in config && config.apiKey) {
+        const response = await fetch(`${config.apiUrl}?module=proxy&action=eth_getCode&address=${address}&apikey=${config.apiKey}`);
+        const data = await response.json();
+        
+        // If code is not "0x", it's a contract
+        return data.result && data.result !== '0x';
+      }
       
-      // If code is not "0x", it's a contract
-      return data.result && data.result !== '0x';
+      // For custom RPCs
+      if ('customRpc' in config && config.customRpc) {
+        // Implement custom RPC logic for contract detection
+        // For demo purposes, we'll return a simplified check
+        return address.startsWith('0x') && address.length >= 42;
+      }
     }
     
     // For non-EVM chains, we would need to implement specific logic
@@ -85,11 +110,16 @@ export const fetchTokenDetails = async (address: string, network: string) => {
     toast.info(`Fetching token details for ${network}...`);
     
     // Get network config
-    const config = API_CONFIG[network as keyof typeof API_CONFIG];
+    const config = API_CONFIG[network];
     if (!config) throw new Error(`Network ${network} not supported`);
     
     // EVM chain token details
-    if (!config.customRpc) {
+    if (!('customRpc' in config) || !config.customRpc) {
+      // Type guard to ensure we're working with Etherscan-style API
+      if (!('apiKey' in config) || !config.apiKey) {
+        throw new Error(`API key not found for ${network}`);
+      }
+      
       // Fetch token info
       const tokenInfoUrl = `${config.apiUrl}?module=token&action=tokeninfo&contractaddress=${address}&apikey=${config.apiKey}`;
       const tokenResponse = await fetch(tokenInfoUrl);
