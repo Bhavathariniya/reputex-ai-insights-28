@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   AlertTriangle,
   CheckCircle,
@@ -9,15 +8,28 @@ import {
   FileCheck,
   FileX,
   CircleDollarSign,
-  Copy,
-  ExternalLink,
-  Calendar,
-  User,
-  Shield,
-  Tag,
-  Search,
+  MoveDown,
+  MoveUp,
+  ShieldAlert,
+  Code,
+  PieChart,
+  Users,
+  Globe,
+  Twitter,
+  MessageCircle,
+  Github,
+  BarChart3,
+  ChevronDown,
+  ChevronUp,
+  AlertCircle,
   Info
 } from 'lucide-react';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import {
   Card,
   CardContent,
@@ -35,7 +47,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { toast } from 'sonner';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface TokenAnalysisProps {
   address: string;
@@ -48,23 +60,29 @@ const TokenAnalysis: React.FC<TokenAnalysisProps> = ({
   network,
   tokenData 
 }) => {
-  const [isCheckingHoneypot, setIsCheckingHoneypot] = useState(true);
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    overview: true,
+    liquidity: false,
+    ownership: false,
+    functions: false,
+    fees: false,
+    distribution: false,
+    social: false
+  });
 
-  useEffect(() => {
-    // Simulate honeypot check with timeout
-    const timer = setTimeout(() => {
-      setIsCheckingHoneypot(false);
-    }, 3000);
-    
-    return () => clearTimeout(timer);
-  }, []);
+  const toggleSection = (section: string) => {
+    setOpenSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
 
   if (!tokenData || !tokenData.supported) {
     return (
       <Card className="w-full mb-6 glass-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-neon-pink" />
+            <AlertCircle className="h-5 w-5 text-neon-pink" />
             Token Analysis Not Available
           </CardTitle>
         </CardHeader>
@@ -78,24 +96,26 @@ const TokenAnalysis: React.FC<TokenAnalysisProps> = ({
   }
 
   const { 
-    safetyScore = 335,
-    maxScore = 550,
+    safetyScore, 
     safetyLevel,
     ownershipRenounced, 
-    tokenName = "LEO Token",
-    tokenSymbol = "LEO",
-    creationDate = "2022-08-15",
-    creatorAddress = "0x1234...5678",
-    audits = [],
-    categories = ["Exchange-based Token", "CEX Token"]
+    liquidityLocked,
+    liquidityLockDuration,
+    liquidityAmount,
+    liquidityPercent,
+    isBuyable,
+    isSellable,
+    honeypotRisk,
+    isVerified,
+    dangerousFunctions,
+    buyFee,
+    sellFee,
+    totalFee,
+    highFees,
+    tokenDistribution,
+    socialLinks,
+    devActivity
   } = tokenData;
-
-  const formattedAddress = address.slice(0, 6) + '...' + address.slice(-4);
-  
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(address);
-    toast.success("Address copied to clipboard!");
-  };
 
   const renderSafetyBadge = (level: string) => {
     switch (level) {
@@ -125,258 +145,544 @@ const TokenAnalysis: React.FC<TokenAnalysisProps> = ({
     }
   };
 
-  const getOwnershipStatus = () => {
-    if (ownershipRenounced) {
+  const renderStatus = (passed: boolean, label?: string) => {
+    if (passed) {
       return (
         <Badge variant="outline" className="border-emerald-500 bg-emerald-500/10 text-emerald-500">
           <CheckCircle className="h-3.5 w-3.5 mr-1" />
-          Ownership Renounced
+          {label || 'Passed'}
         </Badge>
       );
     }
     return (
+      <Badge variant="outline" className="border-red-500 bg-red-500/10 text-red-500">
+        <XCircle className="h-3.5 w-3.5 mr-1" />
+        {label || 'Failed'}
+      </Badge>
+    );
+  };
+
+  const renderWarning = (label: string) => {
+    return (
       <Badge variant="outline" className="border-amber-500 bg-amber-500/10 text-amber-500">
         <AlertTriangle className="h-3.5 w-3.5 mr-1" />
-        Ownership Retained
+        {label}
       </Badge>
     );
   };
 
-  const getScoreColor = (score: number, max: number) => {
-    const percentage = (score / max) * 100;
-    if (percentage >= 80) return "bg-emerald-500";
-    if (percentage >= 60) return "bg-amber-500";
-    return "bg-red-500";
-  };
-
-  const getNetworkBadge = () => {
-    const networkColors: Record<string, string> = {
-      bitcoin: 'border-[#F7931A] bg-[#F7931A]/10 text-[#F7931A]',
-      l1x: 'border-[#3D52F4] bg-[#3D52F4]/10 text-[#3D52F4]',
-      ethereum: 'border-[#627EEA] bg-[#627EEA]/10 text-[#627EEA]',
-      binance: 'border-[#F3BA2F] bg-[#F3BA2F]/10 text-[#F3BA2F]',
-      polygon: 'border-[#8247E5] bg-[#8247E5]/10 text-[#8247E5]',
-      arbitrum: 'border-[#28A0F0] bg-[#28A0F0]/10 text-[#28A0F0]',
-      optimism: 'border-[#FF0420] bg-[#FF0420]/10 text-[#FF0420]',
-      solana: 'border-[#14F195] bg-[#14F195]/10 text-[#14F195]',
-      avalanche: 'border-[#E84142] bg-[#E84142]/10 text-[#E84142]',
-      fantom: 'border-[#1969FF] bg-[#1969FF]/10 text-[#1969FF]',
-      base: 'border-[#0052FF] bg-[#0052FF]/10 text-[#0052FF]',
-      zksync: 'border-[#8C8DFC] bg-[#8C8DFC]/10 text-[#8C8DFC]',
-    };
-
-    const networkAbbr: Record<string, string> = {
-      bitcoin: 'BTC',
-      l1x: 'L1X',
-      ethereum: 'ETH',
-      binance: 'BNB',
-      polygon: 'MATIC',
-      arbitrum: 'ARB',
-      optimism: 'OP',
-      solana: 'SOL',
-      avalanche: 'AVAX',
-      fantom: 'FTM',
-      base: 'BASE',
-      zksync: 'ZKS',
-    };
-
-    return (
-      <Badge
-        variant="outline"
-        className={`py-1 px-3 rounded-full ${networkColors[network] || 'border-muted-foreground text-muted-foreground'}`}
-      >
-        {networkAbbr[network] || network.toUpperCase()}
-      </Badge>
-    );
+  const renderRiskLevel = (risk: string) => {
+    switch (risk) {
+      case 'High':
+        return (
+          <Badge className="bg-red-500/20 text-red-500 border-red-500">
+            High Risk
+          </Badge>
+        );
+      case 'Medium':
+        return (
+          <Badge className="bg-amber-500/20 text-amber-500 border-amber-500">
+            Medium Risk
+          </Badge>
+        );
+      case 'Low':
+        return (
+          <Badge className="bg-emerald-500/20 text-emerald-500 border-emerald-500">
+            Low Risk
+          </Badge>
+        );
+      default:
+        return null;
+    }
   };
 
   return (
     <div className="space-y-6 mb-8">
-      <Card className="w-full glass-card">
+      <Card className="w-full glass-card border-neon-cyan">
         <CardHeader>
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-                {tokenSymbol ? tokenSymbol.charAt(0) : "T"}
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold flex items-center gap-2">
-                  {tokenName} 
-                  <span className="text-lg text-muted-foreground">({tokenSymbol})</span>
-                </h2>
-                <div className="flex items-center gap-2 mt-1">
-                  {getNetworkBadge()}
-                  {renderSafetyBadge(safetyLevel)}
-                </div>
-              </div>
-            </div>
+          <div className="flex justify-between items-center">
+            <CardTitle className="text-xl flex items-center gap-2">
+              <ShieldAlert className="h-5 w-5 text-neon-cyan" />
+              Token Security Analysis
+            </CardTitle>
+            {renderSafetyBadge(safetyLevel)}
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <CircleDollarSign className="h-4 w-4" />
-                  <span>Token Address</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="font-mono text-sm">{formattedAddress}</span>
-                  <button 
-                    onClick={copyToClipboard}
-                    className="text-primary hover:text-primary/70 transition-colors"
-                  >
-                    <Copy className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Calendar className="h-4 w-4" />
-                  <span>Created On</span>
-                </div>
-                <span className="text-sm">{creationDate}</span>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <User className="h-4 w-4" />
-                  <span>Creator</span>
-                </div>
-                <a 
-                  href={`https://etherscan.io/address/${creatorAddress}`} 
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm font-mono flex items-center gap-1 text-primary hover:underline"
-                >
-                  {creatorAddress}
-                  <ExternalLink className="h-3 w-3" />
-                </a>
-              </div>
-            </div>
-            
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Shield className="h-4 w-4" />
-                  <span>Ownership</span>
-                </div>
-                {getOwnershipStatus()}
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <FileCheck className="h-4 w-4" />
-                  <span>Audits</span>
-                </div>
-                {audits && audits.length > 0 ? (
-                  <div className="flex gap-1.5">
-                    {audits.map((audit: string, index: number) => (
-                      <Badge key={index} variant="outline" className="border-primary bg-primary/10">
-                        {audit}
-                      </Badge>
-                    ))}
-                  </div>
-                ) : (
-                  <span className="text-sm text-muted-foreground">Coming Soon</span>
-                )}
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Tag className="h-4 w-4" />
-                  <span>Category</span>
-                </div>
-                <div className="flex flex-wrap gap-1.5 justify-end">
-                  {categories.map((category, index) => (
-                    <Badge 
-                      key={index} 
-                      className="bg-primary/10 hover:bg-primary/20 text-primary border-primary"
-                    >
-                      {category}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
+          <CardDescription>
+            Comprehensive security analysis of this token contract
+          </CardDescription>
         </CardHeader>
-        
         <CardContent>
-          <div className="space-y-6">
-            {/* Unified Risk Rating Bar */}
-            <div className="p-4 border border-muted rounded-lg bg-muted/20">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold flex items-center gap-1.5">
-                  <Shield className="h-5 w-5 text-neon-cyan" />
-                  Risk Rating
-                </h3>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full">
-                        <Info className="h-3.5 w-3.5" />
-                        <span className="sr-only">Info</span>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="text-sm max-w-xs">
-                        This score represents an overall assessment of the token's safety based on multiple security factors.
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm font-medium">Overall Safety Score</span>
+              <span className="text-lg font-bold">{safetyScore}/100</span>
+            </div>
+            <Progress 
+              value={safetyScore} 
+              className="h-2.5"
+              indicatorClassName={
+                safetyScore >= 80 ? "bg-emerald-500" : 
+                safetyScore >= 50 ? "bg-amber-500" : 
+                "bg-red-500"
+              }
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Honeypot Risk</span>
+                {renderRiskLevel(honeypotRisk)}
               </div>
-              
-              <div className="mb-2 flex items-center justify-end">
-                <Badge className="px-3 py-1 border-0" variant="outline">
-                  <Shield className="h-4 w-4 mr-1" />
-                  {safetyScore}/{maxScore}
-                </Badge>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Ownership</span>
+                {ownershipRenounced ? renderStatus(true, "Renounced") : renderWarning("Modifiable")}
               </div>
-              
-              <div className="relative">
-                <Progress 
-                  value={(safetyScore / maxScore) * 100} 
-                  className="h-4"
-                  indicatorClassName={getScoreColor(safetyScore, maxScore)}
-                />
-                <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                  <span>High Risk</span>
-                  <span>Moderate Risk</span>
-                  <span>Low Risk</span>
-                </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Liquidity</span>
+                {liquidityLocked ? renderStatus(true, "Locked") : renderWarning("Unlocked")}
               </div>
             </div>
-            
-            {/* Honeypot Check Status Bar */}
-            <div className={`p-3 border border-muted rounded-lg ${isCheckingHoneypot ? 'bg-amber-500/10' : 'bg-emerald-500/10'} transition-colors duration-500`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  {isCheckingHoneypot ? (
-                    <>
-                      <div className="animate-pulse">
-                        <Search className="h-5 w-5 text-amber-500" />
-                      </div>
-                      <span className="font-medium text-amber-500">Checking for Honeypot...</span>
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle className="h-5 w-5 text-emerald-500" />
-                      <span className="font-medium text-emerald-500">Honeypot Check Passed</span>
-                    </>
-                  )}
-                </div>
-                {!isCheckingHoneypot && (
-                  <Badge className="bg-emerald-500/20 border-emerald-500 text-emerald-500">
-                    Tradable
-                  </Badge>
-                )}
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Contract</span>
+                {isVerified ? renderStatus(true, "Verified") : renderStatus(false, "Unverified")}
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Trading</span>
+                {isSellable ? renderStatus(true, "Can Sell") : renderStatus(false, "Can't Sell")}
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Fees</span>
+                {highFees ? renderWarning(`High (${totalFee}%)`) : renderStatus(true, `Normal (${totalFee}%)`)}
               </div>
             </div>
           </div>
         </CardContent>
+        <CardFooter className="flex flex-col">
+          <div className="w-full p-3 border border-muted rounded-md bg-muted/30">
+            <h4 className="font-medium mb-2 flex items-center gap-1.5">
+              <Info className="h-4 w-4 text-neon-cyan" />
+              Should you trust this token?
+            </h4>
+            <p className="text-sm text-muted-foreground">
+              {safetyLevel === 'Safe' ? 
+                "This token contract appears to have good security practices with minimal risk factors. As always, do your own research before investing." :
+                safetyLevel === 'Caution' ?
+                "This token has some potential risk factors that warrant caution. Review the detailed analysis before making any investment decisions." :
+                "This token shows multiple high-risk indicators. Proceed with extreme caution as there's a significant risk of loss."
+              }
+            </p>
+          </div>
+        </CardFooter>
       </Card>
+
+      <Accordion type="multiple" className="w-full">
+        <AccordionItem value="honeypot" className="glass-card border-muted rounded-xl overflow-hidden mb-4">
+          <AccordionTrigger className="px-4 py-3 hover:no-underline">
+            <div className="flex items-center gap-2">
+              <CircleDollarSign className="h-5 w-5 text-neon-cyan" />
+              <span className="font-medium">Honeypot Test</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <MoveDown className="h-4 w-4 text-primary" />
+                  <span>Buy Test</span>
+                </div>
+                {isBuyable ? 
+                  <Badge className="bg-emerald-500/20 text-emerald-500">Successful</Badge> : 
+                  <Badge className="bg-red-500/20 text-red-500">Failed</Badge>
+                }
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <MoveUp className="h-4 w-4 text-primary" />
+                  <span>Sell Test</span>
+                </div>
+                {isSellable ? 
+                  <Badge className="bg-emerald-500/20 text-emerald-500">Successful</Badge> : 
+                  <Badge className="bg-red-500/20 text-red-500">Failed</Badge>
+                }
+              </div>
+              
+              <div className="mt-4 p-3 border border-muted rounded-md bg-muted/30">
+                <p className="text-sm text-muted-foreground">
+                  {isBuyable && isSellable ? 
+                    "This token can be bought and sold without restrictions." :
+                    !isBuyable ? 
+                    "This token cannot be purchased. It may be paused or have trading restrictions." :
+                    "This token cannot be sold after purchase. This is a strong indicator of a honeypot scam."
+                  }
+                </p>
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="liquidity" className="glass-card border-muted rounded-xl overflow-hidden mb-4">
+          <AccordionTrigger className="px-4 py-3 hover:no-underline">
+            <div className="flex items-center gap-2">
+              {liquidityLocked ? 
+                <Lock className="h-5 w-5 text-neon-cyan" /> : 
+                <Unlock className="h-5 w-5 text-neon-purple" />
+              }
+              <span className="font-medium">Liquidity Pool Info</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="p-3 border border-muted rounded-md">
+                  <div className="text-sm text-muted-foreground mb-1">Liquidity Amount</div>
+                  <div className="text-lg font-medium">{liquidityAmount}</div>
+                </div>
+                
+                <div className="p-3 border border-muted rounded-md">
+                  <div className="text-sm text-muted-foreground mb-1">Liquidity %</div>
+                  <div className="text-lg font-medium">{liquidityPercent}</div>
+                </div>
+              </div>
+              
+              <div className="p-3 border border-muted rounded-md">
+                <div className="text-sm text-muted-foreground mb-1">Lock Status</div>
+                <div className="flex items-center gap-2">
+                  {liquidityLocked ? 
+                    <Badge className="bg-emerald-500/20 text-emerald-500">
+                      Locked for {liquidityLockDuration}
+                    </Badge> : 
+                    <Badge className="bg-red-500/20 text-red-500">
+                      Not Locked
+                    </Badge>
+                  }
+                </div>
+              </div>
+              
+              <div className="p-3 border border-muted rounded-md bg-muted/30">
+                <p className="text-sm text-muted-foreground">
+                  {liquidityLocked ? 
+                    `Liquidity is locked for ${liquidityLockDuration}, which protects against rug pulls where developers remove all trading liquidity.` :
+                    "Liquidity is not locked, which means the project team can remove liquidity at any time, potentially resulting in a rug pull."
+                  }
+                </p>
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="ownership" className="glass-card border-muted rounded-xl overflow-hidden mb-4">
+          <AccordionTrigger className="px-4 py-3 hover:no-underline">
+            <div className="flex items-center gap-2">
+              {ownershipRenounced ? 
+                <CheckCircle className="h-5 w-5 text-neon-cyan" /> : 
+                <AlertTriangle className="h-5 w-5 text-neon-purple" />
+              }
+              <span className="font-medium">Contract Ownership</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span>Owner Control Status</span>
+                {ownershipRenounced ? 
+                  <Badge className="bg-emerald-500/20 text-emerald-500">Renounced</Badge> : 
+                  <Badge className="bg-amber-500/20 text-amber-500">Active Owner</Badge>
+                }
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <span>Contract Verification</span>
+                {isVerified ? 
+                  <div className="flex items-center gap-2">
+                    <FileCheck className="h-4 w-4 text-emerald-500" />
+                    <span className="text-emerald-500">Verified</span>
+                  </div> : 
+                  <div className="flex items-center gap-2">
+                    <FileX className="h-4 w-4 text-red-500" />
+                    <span className="text-red-500">Unverified</span>
+                  </div>
+                }
+              </div>
+              
+              <div className="p-3 border border-muted rounded-md bg-muted/30">
+                <p className="text-sm text-muted-foreground">
+                  {ownershipRenounced ? 
+                    "Ownership of this contract has been renounced, meaning no single entity can modify the contract behavior. This greatly reduces the risk of malicious contract changes." :
+                    "This contract has an active owner who can modify certain contract behaviors. While this allows for upgrades and fixes, it also introduces risk of malicious changes."
+                  }
+                </p>
+                {!isVerified && (
+                  <p className="text-sm text-red-400 mt-2">
+                    Warning: This contract's source code is not verified, making it impossible to audit its functionality.
+                  </p>
+                )}
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="functions" className="glass-card border-muted rounded-xl overflow-hidden mb-4">
+          <AccordionTrigger className="px-4 py-3 hover:no-underline">
+            <div className="flex items-center gap-2">
+              <Code className="h-5 w-5 text-neon-pink" />
+              <span className="font-medium">Function Permissions</span>
+              {dangerousFunctions.length > 0 && (
+                <Badge className="ml-2 bg-red-500/20 text-red-500">{dangerousFunctions.length}</Badge>
+              )}
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            {dangerousFunctions.length > 0 ? (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  The following functions allow the contract owner or privileged addresses to modify contract behavior:
+                </p>
+                <div className="space-y-2">
+                  {dangerousFunctions.map((func, index) => (
+                    <div key={index} className="p-2 border border-muted rounded-md">
+                      <div className="flex items-center justify-between">
+                        <div className="font-mono text-sm">{func.name}()</div>
+                        {renderRiskLevel(func.risk)}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">{func.description}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="p-3 border border-red-500/20 rounded-md bg-red-500/5">
+                  <p className="text-sm text-muted-foreground">
+                    These functions could potentially be used to modify token behavior in ways that disadvantage holders. 
+                    {!ownershipRenounced && " Since ownership is not renounced, these functions remain a risk."}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="p-3 border border-emerald-500/20 rounded-md bg-emerald-500/5">
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckCircle className="h-5 w-5 text-emerald-500" />
+                  <span className="font-medium">No dangerous functions detected</span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  This contract doesn't contain common dangerous functions that could be used to manipulate the token or harm holders.
+                </p>
+              </div>
+            )}
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="fees" className="glass-card border-muted rounded-xl overflow-hidden mb-4">
+          <AccordionTrigger className="px-4 py-3 hover:no-underline">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-neon-cyan" />
+              <span className="font-medium">Transaction Fees</span>
+              {highFees && (
+                <Badge className="ml-2 bg-amber-500/20 text-amber-500">High</Badge>
+              )}
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="p-3 border border-muted rounded-md">
+                  <div className="text-sm text-muted-foreground">Buy Fee</div>
+                  <div className="text-xl font-medium">{buyFee}%</div>
+                </div>
+                
+                <div className="p-3 border border-muted rounded-md">
+                  <div className="text-sm text-muted-foreground">Sell Fee</div>
+                  <div className="text-xl font-medium">{sellFee}%</div>
+                </div>
+                
+                <div className="p-3 border border-muted rounded-md">
+                  <div className="text-sm text-muted-foreground">Total Fee</div>
+                  <div className="text-xl font-medium">{totalFee}%</div>
+                </div>
+              </div>
+              
+              <div className="p-3 border border-muted rounded-md bg-muted/30">
+                <p className="text-sm text-muted-foreground">
+                  {highFees ? 
+                    "This token has unusually high transaction fees, which could impact your trading profitability. High fees are sometimes used to fund project development but can also indicate potential issues." :
+                    "This token has reasonable transaction fees, which is generally a positive sign."
+                  }
+                </p>
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="distribution" className="glass-card border-muted rounded-xl overflow-hidden mb-4">
+          <AccordionTrigger className="px-4 py-3 hover:no-underline">
+            <div className="flex items-center gap-2">
+              <PieChart className="h-5 w-5 text-neon-purple" />
+              <span className="font-medium">Token Distribution</span>
+              {tokenDistribution[0].percentage > 20 && (
+                <Badge className="ml-2 bg-amber-500/20 text-amber-500">Concentrated</Badge>
+              )}
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            <div className="space-y-4">
+              <div className="relative pt-5">
+                <div className="flex mb-2">
+                  {tokenDistribution.map((item, i) => (
+                    <div 
+                      key={i}
+                      className="h-6" 
+                      style={{ 
+                        width: `${item.percentage}%`,
+                        backgroundColor: 
+                          i === 0 ? 'rgba(239, 68, 68, 0.7)' : 
+                          i === 1 ? 'rgba(245, 158, 11, 0.7)' :
+                          i === 2 ? 'rgba(16, 185, 129, 0.7)' :
+                          'rgba(99, 102, 241, 0.7)',
+                        borderRadius: '4px'
+                      }}
+                    />
+                  ))}
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2">
+                  {tokenDistribution.map((item, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ 
+                          backgroundColor: 
+                            i === 0 ? 'rgba(239, 68, 68, 0.7)' : 
+                            i === 1 ? 'rgba(245, 158, 11, 0.7)' :
+                            i === 2 ? 'rgba(16, 185, 129, 0.7)' :
+                            'rgba(99, 102, 241, 0.7)'
+                        }}
+                      />
+                      <span className="text-sm">{item.type}: {item.percentage}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="p-3 border border-muted rounded-md bg-muted/30">
+                <p className="text-sm text-muted-foreground">
+                  {tokenDistribution[0].percentage > 25 ? 
+                    "The top holder controls a significant portion of the total supply, which presents a risk of price manipulation." :
+                    tokenDistribution[0].percentage > 15 ?
+                    "Token distribution shows moderate concentration among top holders. While not ideal, this is common for newer tokens." :
+                    "This token has a healthy distribution pattern with no concerning concentration among top holders."
+                  }
+                </p>
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="social" className="glass-card border-muted rounded-xl overflow-hidden mb-4">
+          <AccordionTrigger className="px-4 py-3 hover:no-underline">
+            <div className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-neon-cyan" />
+              <span className="font-medium">Social & Dev Activity</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium">Project Links</h4>
+                <div className="flex flex-wrap gap-2">
+                  {socialLinks.website && (
+                    <a 
+                      href={socialLinks.website} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-muted rounded-md text-sm hover:bg-muted/80 transition-colors"
+                    >
+                      <Globe className="h-4 w-4" />
+                      Website
+                    </a>
+                  )}
+                  
+                  {socialLinks.twitter && (
+                    <a 
+                      href={socialLinks.twitter} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-muted rounded-md text-sm hover:bg-muted/80 transition-colors"
+                    >
+                      <Twitter className="h-4 w-4" />
+                      Twitter
+                    </a>
+                  )}
+                  
+                  {socialLinks.telegram && (
+                    <a 
+                      href={socialLinks.telegram} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-muted rounded-md text-sm hover:bg-muted/80 transition-colors"
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                      Telegram
+                    </a>
+                  )}
+                  
+                  {socialLinks.github && (
+                    <a 
+                      href={socialLinks.github} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-muted rounded-md text-sm hover:bg-muted/80 transition-colors"
+                    >
+                      <Github className="h-4 w-4" />
+                      GitHub
+                    </a>
+                  )}
+                  
+                  {Object.values(socialLinks).every(link => !link) && (
+                    <span className="text-sm text-muted-foreground">No official links found</span>
+                  )}
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium">Developer Activity</h4>
+                {devActivity.lastCommit ? (
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Last Commit</span>
+                      <span className="text-sm">
+                        {new Date(devActivity.lastCommit).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Commit Frequency</span>
+                      <span className="text-sm">{devActivity.commitFrequency}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Contributors</span>
+                      <span className="text-sm">{devActivity.contributors}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <span className="text-sm text-muted-foreground">No GitHub activity data available</span>
+                )}
+              </div>
+              
+              <div className="p-3 border border-muted rounded-md bg-muted/30">
+                <p className="text-sm text-muted-foreground">
+                  {Object.values(socialLinks).some(link => link) ? 
+                    "This project has an established online presence, which is generally a positive sign. Always verify the authenticity of social links." :
+                    "No official social links were found for this token, which could be a concern. Legitimate projects typically maintain social channels for community engagement."
+                  }
+                  {devActivity.lastCommit && devActivity.commitFrequency !== "No recent activity" ? 
+                    " Developer activity shows ongoing project maintenance, suggesting continued development." :
+                    " Limited or no developer activity could indicate an abandoned or inactive project."
+                  }
+                </p>
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </div>
   );
 };
