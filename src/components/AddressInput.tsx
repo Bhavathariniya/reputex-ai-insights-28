@@ -1,24 +1,24 @@
-
 import React, { useState } from 'react';
 import { Search, Loader2 } from 'lucide-react';
+import { Bitcoin, Ethereum, CloudFlare, Cpu, AlertCircle, Rocket, CirclePlay, Sun, Mountain, Flame, Building2, Workflow } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 const BLOCKCHAINS = [
-  { id: 'bitcoin', name: 'Bitcoin', icon: 'B' },
-  { id: 'l1x', name: 'L1X', icon: 'L' },
-  { id: 'ethereum', name: 'Ethereum', icon: 'E' },
-  { id: 'binance', name: 'BNB Chain', icon: 'B' },
-  { id: 'polygon', name: 'Polygon', icon: 'P' },
-  { id: 'arbitrum', name: 'Arbitrum', icon: 'A' },
-  { id: 'optimism', name: 'Optimism', icon: 'O' },
-  { id: 'solana', name: 'Solana', icon: 'S' },
-  { id: 'avalanche', name: 'Avalanche', icon: 'A' },
-  { id: 'fantom', name: 'Fantom', icon: 'F' },
-  { id: 'base', name: 'Base', icon: 'B' },
-  { id: 'zksync', name: 'zkSync', icon: 'Z' },
+  { id: 'bitcoin', name: 'Bitcoin', Icon: Bitcoin },
+  { id: 'l1x', name: 'L1X', Icon: Workflow },
+  { id: 'ethereum', name: 'Ethereum', Icon: Ethereum },
+  { id: 'binance', name: 'BNB Chain', Icon: CloudFlare },
+  { id: 'polygon', name: 'Polygon', Icon: Cpu },
+  { id: 'arbitrum', name: 'Arbitrum', Icon: AlertCircle },
+  { id: 'optimism', name: 'Optimism', Icon: Rocket },
+  { id: 'solana', name: 'Solana', Icon: CirclePlay },
+  { id: 'avalanche', name: 'Avalanche', Icon: Mountain },
+  { id: 'fantom', name: 'Fantom', Icon: Flame },
+  { id: 'base', name: 'Base', Icon: Building2 },
+  { id: 'zksync', name: 'zkSync', Icon: Workflow },
 ];
 
 interface AddressInputProps {
@@ -33,26 +33,29 @@ const BlockchainSelector: React.FC<{
 }> = ({ selectedNetwork, onNetworkChange, disabled = false }) => {
   return (
     <div className="flex flex-wrap justify-center gap-2 mb-4">
-      {BLOCKCHAINS.map((blockchain) => (
-        <button
-          key={blockchain.id}
-          type="button"
-          disabled={disabled}
-          onClick={() => onNetworkChange(blockchain.id)}
-          className={cn(
-            "px-3 py-1 rounded-full text-sm transition-all duration-300 ease-in-out",
-            "border border-transparent hover:border-neon-cyan/50",
-            "flex items-center gap-1",
-            selectedNetwork === blockchain.id
-              ? "bg-neon-cyan/20 text-neon-cyan border-neon-cyan"
-              : "bg-muted/20 text-muted-foreground hover:bg-muted/40",
-            disabled && "opacity-50 cursor-not-allowed"
-          )}
-        >
-          <span className="font-bold mr-1">{blockchain.icon}</span>
-          {blockchain.name}
-        </button>
-      ))}
+      {BLOCKCHAINS.map((blockchain) => {
+        const { Icon } = blockchain;
+        return (
+          <button
+            key={blockchain.id}
+            type="button"
+            disabled={disabled}
+            onClick={() => onNetworkChange(blockchain.id)}
+            className={cn(
+              "px-3 py-2 rounded-full text-sm transition-all duration-300 ease-in-out",
+              "border border-transparent hover:border-neon-cyan/50",
+              "flex items-center gap-2",
+              selectedNetwork === blockchain.id
+                ? "bg-neon-cyan/20 text-neon-cyan border-neon-cyan"
+                : "bg-muted/20 text-muted-foreground hover:bg-muted/40",
+              disabled && "opacity-50 cursor-not-allowed"
+            )}
+          >
+            <Icon className="h-5 w-5" />
+            {blockchain.name}
+          </button>
+        );
+      })}
     </div>
   );
 };
