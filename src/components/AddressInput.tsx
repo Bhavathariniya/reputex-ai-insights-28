@@ -1,25 +1,38 @@
 
 import React, { useState } from 'react';
 import { Search, Loader2 } from 'lucide-react';
-import { Bitcoin, Workflow, Cpu, AlertCircle, Rocket, CirclePlay, Sun, Mountain, Flame, Building2, Cloud, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import {
+  BitcoinIcon,
+  L1XIcon,
+  EthereumIcon,
+  BNBChainIcon,
+  PolygonIcon,
+  ArbitrumIcon,
+  OptimismIcon,
+  SolanaIcon,
+  AvalancheIcon,
+  FantomIcon,
+  BaseIcon,
+  ZkSyncIcon,
+} from './icons';
 
 const BLOCKCHAINS = [
-  { id: 'bitcoin', name: 'Bitcoin', Icon: Bitcoin },
-  { id: 'l1x', name: 'L1X', Icon: Workflow },
-  { id: 'ethereum', name: 'Ethereum', Icon: Wallet }, // Replaced with Wallet icon
-  { id: 'binance', name: 'BNB Chain', Icon: Cloud }, // Replaced with Cloud icon
-  { id: 'polygon', name: 'Polygon', Icon: Cpu },
-  { id: 'arbitrum', name: 'Arbitrum', Icon: AlertCircle },
-  { id: 'optimism', name: 'Optimism', Icon: Rocket },
-  { id: 'solana', name: 'Solana', Icon: CirclePlay },
-  { id: 'avalanche', name: 'Avalanche', Icon: Mountain },
-  { id: 'fantom', name: 'Fantom', Icon: Flame },
-  { id: 'base', name: 'Base', Icon: Building2 },
-  { id: 'zksync', name: 'zkSync', Icon: Workflow },
+  { id: 'bitcoin', name: 'Bitcoin', Icon: BitcoinIcon },
+  { id: 'l1x', name: 'L1X', Icon: L1XIcon },
+  { id: 'ethereum', name: 'Ethereum', Icon: EthereumIcon },
+  { id: 'binance', name: 'BNB Chain', Icon: BNBChainIcon },
+  { id: 'polygon', name: 'Polygon', Icon: PolygonIcon },
+  { id: 'arbitrum', name: 'Arbitrum', Icon: ArbitrumIcon },
+  { id: 'optimism', name: 'Optimism', Icon: OptimismIcon },
+  { id: 'solana', name: 'Solana', Icon: SolanaIcon },
+  { id: 'avalanche', name: 'Avalanche', Icon: AvalancheIcon },
+  { id: 'fantom', name: 'Fantom', Icon: FantomIcon },
+  { id: 'base', name: 'Base', Icon: BaseIcon },
+  { id: 'zksync', name: 'zkSync', Icon: ZkSyncIcon },
 ];
 
 interface AddressInputProps {
