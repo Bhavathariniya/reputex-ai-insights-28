@@ -1,6 +1,7 @@
+
 import React, { useState } from 'react';
 import { Search, Loader2 } from 'lucide-react';
-import { Bitcoin, Ethereum, CloudFlare, Cpu, AlertCircle, Rocket, CirclePlay, Sun, Mountain, Flame, Building2, Workflow } from 'lucide-react';
+import { Bitcoin, Workflow, Cpu, AlertCircle, Rocket, CirclePlay, Sun, Mountain, Flame, Building2, Cloud, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
@@ -9,8 +10,8 @@ import { cn } from '@/lib/utils';
 const BLOCKCHAINS = [
   { id: 'bitcoin', name: 'Bitcoin', Icon: Bitcoin },
   { id: 'l1x', name: 'L1X', Icon: Workflow },
-  { id: 'ethereum', name: 'Ethereum', Icon: Ethereum },
-  { id: 'binance', name: 'BNB Chain', Icon: CloudFlare },
+  { id: 'ethereum', name: 'Ethereum', Icon: Wallet }, // Replaced with Wallet icon
+  { id: 'binance', name: 'BNB Chain', Icon: Cloud }, // Replaced with Cloud icon
   { id: 'polygon', name: 'Polygon', Icon: Cpu },
   { id: 'arbitrum', name: 'Arbitrum', Icon: AlertCircle },
   { id: 'optimism', name: 'Optimism', Icon: Rocket },
