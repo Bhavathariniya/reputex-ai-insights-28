@@ -1,22 +1,17 @@
+
 import React, { useEffect, useState } from 'react';
-import ScoreCard from '@/components/ScoreCard';
-import TokenAnalysis from '@/components/TokenAnalysis';
 import { 
   Sparkles, 
   Clock, 
   Link as LinkIcon, 
   ExternalLink,
   Shield,
-  Droplet,
-  Users,
-  BarChart2,
   AlertTriangle,
   Info,
   CheckCircle,
   XCircle,
   Volume2,
-  MessageCircle,
-  Tag
+  MessageCircle
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
@@ -24,6 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { analyzeTokenSecurity } from '@/lib/chain-detection';
+import TokenAnalysis from '@/components/TokenAnalysis';
 
 interface AnalysisReportProps {
   address: string;
@@ -132,17 +128,6 @@ const AnalysisReport: React.FC<AnalysisReportProps> = ({
     };
     
     return (explorers[network] || explorers.ethereum) + address;
-  };
-  
-  const scoreDescriptions = {
-    trust: "Overall trust level based on transaction history, contract verification, and behavior patterns",
-    developer: "Assessment of code quality, development activity, and technical implementation",
-    liquidity: "Market depth, trading volume reliability, and token accessibility",
-    community: "Evaluation of community size, engagement levels, and sentiment analysis",
-    holders: "Analysis of token distribution across different wallet types and concentration patterns",
-    fraud: "Probability assessment of fraudulent activity or scam indicators",
-    sentiment: "Real-time analysis of social media sentiment across platforms",
-    confidence: "Confidence level in the overall assessment based on data quality and completeness"
   };
   
   const calculateVerdict = () => {
@@ -317,81 +302,12 @@ const AnalysisReport: React.FC<AnalysisReportProps> = ({
             <div className="h-4 w-48 bg-muted rounded"></div>
           </div>
         </div>
-      ) : tokenSecurityData && (
+      ) : (
         <TokenAnalysis 
           address={address}
           network={network}
           tokenData={tokenSecurityData}
         />
-      )}
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <ScoreCardWithInfo 
-          title="Trust Score" 
-          score={scores.trust_score}
-          type="trust"
-          description={scoreDescriptions.trust}
-          icon={<Shield className="h-6 w-6" />}
-        />
-        <ScoreCardWithInfo 
-          title="Developer Score" 
-          score={scores.developer_score}
-          type="developer"
-          description={scoreDescriptions.developer}
-        />
-        <ScoreCardWithInfo 
-          title="Liquidity Score" 
-          score={scores.liquidity_score}
-          type="liquidity"
-          description={scoreDescriptions.liquidity}
-          icon={<Droplet className="h-6 w-6" />}
-        />
-      </div>
-      
-      {(scores.community_score !== undefined || scores.holder_distribution !== undefined || 
-        scores.fraud_risk !== undefined || scores.social_sentiment !== undefined) && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {scores.community_score !== undefined && (
-            <ScoreCardWithInfo 
-              title="Community Score" 
-              score={scores.community_score}
-              type="community"
-              description={scoreDescriptions.community}
-              icon={<Users className="h-6 w-6" />}
-            />
-          )}
-          
-          {scores.holder_distribution !== undefined && (
-            <ScoreCardWithInfo 
-              title="Holder Distribution" 
-              score={scores.holder_distribution}
-              type="holders"
-              description={scoreDescriptions.holders}
-              icon={<BarChart2 className="h-6 w-6" />}
-            />
-          )}
-          
-          {scores.fraud_risk !== undefined && (
-            <ScoreCardWithInfo 
-              title="Fraud Risk" 
-              score={100 - scores.fraud_risk}
-              type="fraud"
-              description={scoreDescriptions.fraud}
-              icon={<AlertTriangle className="h-6 w-6" />}
-              invertScore={true}
-            />
-          )}
-          
-          {scores.social_sentiment !== undefined && (
-            <ScoreCardWithInfo 
-              title="Social Sentiment" 
-              score={scores.social_sentiment}
-              type="sentiment"
-              description={scoreDescriptions.sentiment}
-              icon={<MessageCircle className="h-6 w-6" />}
-            />
-          )}
-        </div>
       )}
       
       <div className="glass-card rounded-xl p-6 mb-8">
@@ -405,54 +321,6 @@ const AnalysisReport: React.FC<AnalysisReportProps> = ({
             <p key={index}>{sentence}.</p>
           ))}
         </div>
-      </div>
-    </div>
-  );
-};
-
-interface ScoreCardWithInfoProps {
-  title: string;
-  score: number;
-  type: string;
-  description: string;
-  icon?: React.ReactNode;
-  invertScore?: boolean;
-}
-
-const ScoreCardWithInfo: React.FC<ScoreCardWithInfoProps> = ({ 
-  title, 
-  score, 
-  type, 
-  description,
-  icon,
-  invertScore = false
-}) => {
-  const scoreType = type as 'trust' | 'developer' | 'liquidity';
-  
-  return (
-    <div className="relative">
-      <ScoreCard
-        title={title}
-        score={score}
-        type={type as any}
-      />
-      <div className="absolute top-2 right-2">
-        <HoverCard>
-          <HoverCardTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full">
-              <Info className="h-3 w-3" />
-              <span className="sr-only">Info</span>
-            </Button>
-          </HoverCardTrigger>
-          <HoverCardContent className="w-80">
-            <p className="text-sm">{description}</p>
-            {invertScore && (
-              <p className="text-xs text-muted-foreground mt-1">
-                Note: For this metric, higher scores indicate lower risk.
-              </p>
-            )}
-          </HoverCardContent>
-        </HoverCard>
       </div>
     </div>
   );

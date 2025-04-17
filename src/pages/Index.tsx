@@ -95,6 +95,9 @@ const Index = () => {
       const isContractAddress = await isContract(address, resolvedNetwork);
       setAddressType(isContractAddress ? 'contract' : 'wallet');
       
+      // Fetch real-time data from various APIs
+      toast.info('Fetching on-chain data...');
+      
       // Fetch wallet transaction data
       const walletData = await getWalletTransactions(address, resolvedNetwork);
       
@@ -121,6 +124,8 @@ const Index = () => {
         network: resolvedNetwork,
         address_type: isContractAddress ? 'contract' : 'wallet',
       };
+      
+      toast.info('Analyzing with AI...');
       
       // Get enhanced AI analysis
       const aiAnalysisResponse = await getAIAnalysis(aggregatedData);
