@@ -1,25 +1,53 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
-  ExternalLink,
-  Copy,
-  CheckCircle,
   AlertTriangle,
+  CheckCircle,
   XCircle,
-  Clock,
-  User,
+  Lock,
+  Unlock,
   FileCheck,
   FileX,
-  Tag,
-  Shield,
-  Landmark,
-  Search,
-  Loader2
+  CircleDollarSign,
+  MoveDown,
+  MoveUp,
+  ShieldAlert,
+  Code,
+  PieChart,
+  Users,
+  Globe,
+  Twitter,
+  MessageCircle,
+  Github,
+  BarChart3,
+  ChevronDown,
+  ChevronUp,
+  AlertCircle,
+  Info
 } from 'lucide-react';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { toast } from 'sonner';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface TokenAnalysisProps {
   address: string;
@@ -27,429 +55,634 @@ interface TokenAnalysisProps {
   tokenData: any;
 }
 
-// Helper function to truncate addresses
-const truncateAddress = (address: string) => {
-  if (!address) return '';
-  return `${address.slice(0, 6)}...${address.slice(-4)}`;
-};
-
-// Helper function to format date
-const formatDate = (timestamp: string | number | Date) => {
-  if (!timestamp) return 'Unknown';
-  const date = new Date(timestamp);
-  return date.toLocaleDateString('en-US', { 
-    year: 'numeric', 
-    month: 'short', 
-    day: 'numeric' 
-  });
-};
-
 const TokenAnalysis: React.FC<TokenAnalysisProps> = ({ 
   address, 
   network,
   tokenData 
 }) => {
-  const [isLoading, setIsLoading] = useState(true);
-  const [tokenInfo, setTokenInfo] = useState<any>(null);
-  const [honeypotStatus, setHoneypotStatus] = useState<'checking' | 'safe' | 'warning' | 'danger'>('checking');
-  
-  // Fetch token data from various APIs
-  useEffect(() => {
-    const fetchTokenData = async () => {
-      if (!address || !network) return;
-      
-      setIsLoading(true);
-      try {
-        // Simulate API calls (replace with actual API calls)
-        
-        // 1. Fetch basic token info from CoinGecko (in real implementation)
-        const coinGeckoData = await simulateCoinGeckoAPI(address, network);
-        
-        // 2. Fetch contract info from Etherscan (in real implementation)
-        const etherscanData = await simulateEtherscanAPI(address, network);
-        
-        // 3. Check honeypot status (in real implementation)
-        const honeypotData = await simulateHoneypotAPI(address, network);
-        
-        // Merge all data
-        const mergedData = {
-          ...coinGeckoData,
-          ...etherscanData,
-          ...honeypotData,
-          // Add any other data sources
-        };
-        
-        setTokenInfo(mergedData);
-        setHoneypotStatus(mergedData.honeypotRisk === 'High' ? 'danger' : 
-                         mergedData.honeypotRisk === 'Medium' ? 'warning' : 'safe');
-      } catch (error) {
-        console.error("Error fetching token data:", error);
-        toast.error("Failed to fetch token data");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchTokenData();
-  }, [address, network]);
-  
-  // Simulate CoinGecko API
-  const simulateCoinGeckoAPI = async (address: string, network: string) => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    // Return mock data (in real implementation, fetch from CoinGecko)
-    return {
-      name: "Sample Token",
-      symbol: "SMPL",
-      logo: "https://assets.coingecko.com/coins/images/8418/small/leo-token-logo.png",
-      marketCap: "$1,234,567,890",
-      tags: ["Exchange-based Token", "CEX Token", "Utility"],
-      category: "Exchange Token",
-      description: "A sample token for exchange operations",
-    };
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    overview: true,
+    liquidity: false,
+    ownership: false,
+    functions: false,
+    fees: false,
+    distribution: false,
+    social: false
+  });
+
+  const toggleSection = (section: string) => {
+    setOpenSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
   };
-  
-  // Simulate Etherscan API
-  const simulateEtherscanAPI = async (address: string, network: string) => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 600));
-    
-    // Return mock data (in real implementation, fetch from Etherscan)
-    return {
-      creationDate: new Date("2023-05-15"),
-      creatorAddress: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
-      isVerified: Math.random() > 0.3, // 70% chance of being verified
-      ownershipRenounced: Math.random() > 0.5, // 50% chance of being renounced
-    };
-  };
-  
-  // Simulate Honeypot API
-  const simulateHoneypotAPI = async (address: string, network: string) => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Return mock data (in real implementation, fetch from Honeypot.is)
-    const risks = ["Low", "Medium", "High"];
-    const randomRisk = risks[Math.floor(Math.random() * risks.length)];
-    
-    return {
-      honeypotRisk: randomRisk,
-      isBuyable: randomRisk !== "High",
-      isSellable: randomRisk !== "High",
-      buyTax: randomRisk === "High" ? "25%" : randomRisk === "Medium" ? "10%" : "2%",
-      sellTax: randomRisk === "High" ? "35%" : randomRisk === "Medium" ? "15%" : "2%",
-      riskScore: randomRisk === "High" ? 150 : randomRisk === "Medium" ? 320 : 480,
-      maxScore: 550,
-    };
-  };
-  
-  const getExplorerUrl = (addressToExplore: string) => {
-    const explorers: Record<string, string> = {
-      ethereum: 'https://etherscan.io/address/',
-      binance: 'https://bscscan.com/address/',
-      polygon: 'https://polygonscan.com/address/',
-      arbitrum: 'https://arbiscan.io/address/',
-      optimism: 'https://optimistic.etherscan.io/address/',
-      // Add more networks as needed
-    };
-    
-    return (explorers[network] || explorers.ethereum) + addressToExplore;
-  };
-  
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text).then(() => {
-      toast.success("Address copied to clipboard");
-    }).catch(err => {
-      console.error('Failed to copy: ', err);
-      toast.error("Failed to copy address");
-    });
-  };
-  
-  const getNetworkBadgeColor = (network: string) => {
-    const networkColors: Record<string, string> = {
-      ethereum: 'border-[#627EEA] bg-[#627EEA]/10 text-[#627EEA]',
-      binance: 'border-[#F3BA2F] bg-[#F3BA2F]/10 text-[#F3BA2F]',
-      polygon: 'border-[#8247E5] bg-[#8247E5]/10 text-[#8247E5]',
-      arbitrum: 'border-[#28A0F0] bg-[#28A0F0]/10 text-[#28A0F0]',
-      optimism: 'border-[#FF0420] bg-[#FF0420]/10 text-[#FF0420]',
-      // Add more networks as needed
-    };
-    
-    return networkColors[network] || 'border-muted-foreground text-muted-foreground';
-  };
-  
-  const getNetworkName = (network: string) => {
-    const networkNames: Record<string, string> = {
-      ethereum: 'ETH',
-      binance: 'BSC',
-      polygon: 'POLY',
-      arbitrum: 'ARB',
-      optimism: 'OPT',
-      // Add more networks as needed
-    };
-    
-    return networkNames[network] || network.toUpperCase();
-  };
-  
-  const renderRiskMeter = (score: number, maxScore: number) => {
-    const percentage = (score / maxScore) * 100;
-    
-    let indicatorClass = "";
-    if (percentage < 40) {
-      indicatorClass = "bg-gradient-to-r from-red-500 to-red-400";
-    } else if (percentage < 70) {
-      indicatorClass = "bg-gradient-to-r from-yellow-500 to-yellow-400";
-    } else {
-      indicatorClass = "bg-gradient-to-r from-green-500 to-green-400";
-    }
-    
-    return (
-      <div className="w-full space-y-2">
-        <div className="flex justify-between items-center">
-          <span className="text-sm font-medium">Risk Score</span>
-          <span className="text-sm font-bold">{score}/{maxScore}</span>
-        </div>
-        <div className="relative">
-          <Progress 
-            value={percentage} 
-            className="h-3 bg-gradient-to-r from-red-500 via-yellow-500 to-green-500"
-            indicatorClassName={indicatorClass}
-          />
-        </div>
-        <div className="flex justify-between text-xs text-muted-foreground">
-          <span>High Risk</span>
-          <span>Medium Risk</span>
-          <span>Low Risk</span>
-        </div>
-      </div>
-    );
-  };
-  
-  const renderHoneypotStatus = (status: 'checking' | 'safe' | 'warning' | 'danger') => {
-    if (status === 'checking') {
-      return (
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          <span>Checking for Honeypot</span>
-        </div>
-      );
-    } else if (status === 'safe') {
-      return (
-        <div className="flex items-center gap-2 text-emerald-500">
-          <CheckCircle className="h-4 w-4" />
-          <span>Safe to Trade</span>
-        </div>
-      );
-    } else if (status === 'warning') {
-      return (
-        <div className="flex items-center gap-2 text-amber-500">
-          <AlertTriangle className="h-4 w-4" />
-          <span>Caution Advised</span>
-        </div>
-      );
-    } else {
-      return (
-        <div className="flex items-center gap-2 text-red-500">
-          <XCircle className="h-4 w-4" />
-          <span>Likely Honeypot</span>
-        </div>
-      );
-    }
-  };
-  
+
   if (!tokenData || !tokenData.supported) {
     return (
-      <div className="w-full mb-6 glass-card p-6 rounded-xl">
-        <div className="flex items-center gap-2 text-neon-pink">
-          <AlertTriangle className="h-5 w-5" />
-          <h3 className="font-medium">Token Analysis Not Available</h3>
-        </div>
-        <p className="text-muted-foreground mt-2">
-          Detailed token analysis is only available for EVM-compatible chains.
-        </p>
-      </div>
+      <Card className="w-full mb-6 glass-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <AlertCircle className="h-5 w-5 text-neon-pink" />
+            Token Analysis Not Available
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">
+            Detailed token analysis is only available for EVM-compatible chains.
+          </p>
+        </CardContent>
+      </Card>
     );
   }
-  
+
+  const { 
+    safetyScore, 
+    safetyLevel,
+    ownershipRenounced, 
+    liquidityLocked,
+    liquidityLockDuration,
+    liquidityAmount,
+    liquidityPercent,
+    isBuyable,
+    isSellable,
+    honeypotRisk,
+    isVerified,
+    dangerousFunctions,
+    buyFee,
+    sellFee,
+    totalFee,
+    highFees,
+    tokenDistribution,
+    socialLinks,
+    devActivity
+  } = tokenData;
+
+  const renderSafetyBadge = (level: string) => {
+    switch (level) {
+      case 'Safe':
+        return (
+          <Badge className="bg-emerald-500/20 text-emerald-500 border-emerald-500">
+            <CheckCircle className="h-3.5 w-3.5 mr-1" />
+            Safe
+          </Badge>
+        );
+      case 'Caution':
+        return (
+          <Badge className="bg-amber-500/20 text-amber-500 border-amber-500">
+            <AlertTriangle className="h-3.5 w-3.5 mr-1" />
+            Caution
+          </Badge>
+        );
+      case 'High Risk':
+        return (
+          <Badge className="bg-red-500/20 text-red-500 border-red-500">
+            <XCircle className="h-3.5 w-3.5 mr-1" />
+            High Risk
+          </Badge>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const renderStatus = (passed: boolean, label?: string) => {
+    if (passed) {
+      return (
+        <Badge variant="outline" className="border-emerald-500 bg-emerald-500/10 text-emerald-500">
+          <CheckCircle className="h-3.5 w-3.5 mr-1" />
+          {label || 'Passed'}
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="outline" className="border-red-500 bg-red-500/10 text-red-500">
+        <XCircle className="h-3.5 w-3.5 mr-1" />
+        {label || 'Failed'}
+      </Badge>
+    );
+  };
+
+  const renderWarning = (label: string) => {
+    return (
+      <Badge variant="outline" className="border-amber-500 bg-amber-500/10 text-amber-500">
+        <AlertTriangle className="h-3.5 w-3.5 mr-1" />
+        {label}
+      </Badge>
+    );
+  };
+
+  const renderRiskLevel = (risk: string) => {
+    switch (risk) {
+      case 'High':
+        return (
+          <Badge className="bg-red-500/20 text-red-500 border-red-500">
+            High Risk
+          </Badge>
+        );
+      case 'Medium':
+        return (
+          <Badge className="bg-amber-500/20 text-amber-500 border-amber-500">
+            Medium Risk
+          </Badge>
+        );
+      case 'Low':
+        return (
+          <Badge className="bg-emerald-500/20 text-emerald-500 border-emerald-500">
+            Low Risk
+          </Badge>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
-    <div className="w-full space-y-6 mb-8 animate-fade-in">
-      <div className="glass-card border-neon-cyan p-6 rounded-xl">
-        {isLoading ? (
-          // Loading skeleton
-          <div className="space-y-4">
-            <div className="flex items-center gap-4">
-              <div className="h-12 w-12 rounded-full bg-muted animate-pulse"></div>
-              <div className="space-y-2">
-                <div className="h-6 w-32 bg-muted animate-pulse rounded"></div>
-                <div className="h-4 w-20 bg-muted animate-pulse rounded"></div>
+    <div className="space-y-6 mb-8">
+      <Card className="w-full glass-card border-neon-cyan">
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <CardTitle className="text-xl flex items-center gap-2">
+              <ShieldAlert className="h-5 w-5 text-neon-cyan" />
+              Token Security Analysis
+            </CardTitle>
+            {renderSafetyBadge(safetyLevel)}
+          </div>
+          <CardDescription>
+            Comprehensive security analysis of this token contract
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm font-medium">Overall Safety Score</span>
+              <span className="text-lg font-bold">{safetyScore}/100</span>
+            </div>
+            <Progress 
+              value={safetyScore} 
+              className="h-2.5"
+              indicatorClassName={
+                safetyScore >= 80 ? "bg-emerald-500" : 
+                safetyScore >= 50 ? "bg-amber-500" : 
+                "bg-red-500"
+              }
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Honeypot Risk</span>
+                {renderRiskLevel(honeypotRisk)}
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Ownership</span>
+                {ownershipRenounced ? renderStatus(true, "Renounced") : renderWarning("Modifiable")}
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Liquidity</span>
+                {liquidityLocked ? renderStatus(true, "Locked") : renderWarning("Unlocked")}
               </div>
             </div>
-            <div className="space-y-4 mt-4">
-              <div className="h-4 w-full bg-muted animate-pulse rounded"></div>
-              <div className="h-4 w-3/4 bg-muted animate-pulse rounded"></div>
-              <div className="h-4 w-1/2 bg-muted animate-pulse rounded"></div>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Contract</span>
+                {isVerified ? renderStatus(true, "Verified") : renderStatus(false, "Unverified")}
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Trading</span>
+                {isSellable ? renderStatus(true, "Can Sell") : renderStatus(false, "Can't Sell")}
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Fees</span>
+                {highFees ? renderWarning(`High (${totalFee}%)`) : renderStatus(true, `Normal (${totalFee}%)`)}
+              </div>
             </div>
           </div>
-        ) : (
-          <div className="space-y-6">
-            {/* Token Header */}
-            <div className="flex items-center gap-4">
-              <div className="h-16 w-16 rounded-full overflow-hidden border border-muted flex items-center justify-center bg-muted/30">
-                {tokenInfo?.logo ? (
-                  <img 
-                    src={tokenInfo.logo} 
-                    alt={`${tokenInfo.name} logo`} 
-                    className="h-14 w-14 object-contain"
-                  />
+        </CardContent>
+        <CardFooter className="flex flex-col">
+          <div className="w-full p-3 border border-muted rounded-md bg-muted/30">
+            <h4 className="font-medium mb-2 flex items-center gap-1.5">
+              <Info className="h-4 w-4 text-neon-cyan" />
+              Should you trust this token?
+            </h4>
+            <p className="text-sm text-muted-foreground">
+              {safetyLevel === 'Safe' ? 
+                "This token contract appears to have good security practices with minimal risk factors. As always, do your own research before investing." :
+                safetyLevel === 'Caution' ?
+                "This token has some potential risk factors that warrant caution. Review the detailed analysis before making any investment decisions." :
+                "This token shows multiple high-risk indicators. Proceed with extreme caution as there's a significant risk of loss."
+              }
+            </p>
+          </div>
+        </CardFooter>
+      </Card>
+
+      <Accordion type="multiple" className="w-full">
+        <AccordionItem value="honeypot" className="glass-card border-muted rounded-xl overflow-hidden mb-4">
+          <AccordionTrigger className="px-4 py-3 hover:no-underline">
+            <div className="flex items-center gap-2">
+              <CircleDollarSign className="h-5 w-5 text-neon-cyan" />
+              <span className="font-medium">Honeypot Test</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <MoveDown className="h-4 w-4 text-primary" />
+                  <span>Buy Test</span>
+                </div>
+                {isBuyable ? 
+                  <Badge className="bg-emerald-500/20 text-emerald-500">Successful</Badge> : 
+                  <Badge className="bg-red-500/20 text-red-500">Failed</Badge>
+                }
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <MoveUp className="h-4 w-4 text-primary" />
+                  <span>Sell Test</span>
+                </div>
+                {isSellable ? 
+                  <Badge className="bg-emerald-500/20 text-emerald-500">Successful</Badge> : 
+                  <Badge className="bg-red-500/20 text-red-500">Failed</Badge>
+                }
+              </div>
+              
+              <div className="mt-4 p-3 border border-muted rounded-md bg-muted/30">
+                <p className="text-sm text-muted-foreground">
+                  {isBuyable && isSellable ? 
+                    "This token can be bought and sold without restrictions." :
+                    !isBuyable ? 
+                    "This token cannot be purchased. It may be paused or have trading restrictions." :
+                    "This token cannot be sold after purchase. This is a strong indicator of a honeypot scam."
+                  }
+                </p>
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="liquidity" className="glass-card border-muted rounded-xl overflow-hidden mb-4">
+          <AccordionTrigger className="px-4 py-3 hover:no-underline">
+            <div className="flex items-center gap-2">
+              {liquidityLocked ? 
+                <Lock className="h-5 w-5 text-neon-cyan" /> : 
+                <Unlock className="h-5 w-5 text-neon-purple" />
+              }
+              <span className="font-medium">Liquidity Pool Info</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="p-3 border border-muted rounded-md">
+                  <div className="text-sm text-muted-foreground mb-1">Liquidity Amount</div>
+                  <div className="text-lg font-medium">{liquidityAmount}</div>
+                </div>
+                
+                <div className="p-3 border border-muted rounded-md">
+                  <div className="text-sm text-muted-foreground mb-1">Liquidity %</div>
+                  <div className="text-lg font-medium">{liquidityPercent}</div>
+                </div>
+              </div>
+              
+              <div className="p-3 border border-muted rounded-md">
+                <div className="text-sm text-muted-foreground mb-1">Lock Status</div>
+                <div className="flex items-center gap-2">
+                  {liquidityLocked ? 
+                    <Badge className="bg-emerald-500/20 text-emerald-500">
+                      Locked for {liquidityLockDuration}
+                    </Badge> : 
+                    <Badge className="bg-red-500/20 text-red-500">
+                      Not Locked
+                    </Badge>
+                  }
+                </div>
+              </div>
+              
+              <div className="p-3 border border-muted rounded-md bg-muted/30">
+                <p className="text-sm text-muted-foreground">
+                  {liquidityLocked ? 
+                    `Liquidity is locked for ${liquidityLockDuration}, which protects against rug pulls where developers remove all trading liquidity.` :
+                    "Liquidity is not locked, which means the project team can remove liquidity at any time, potentially resulting in a rug pull."
+                  }
+                </p>
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="ownership" className="glass-card border-muted rounded-xl overflow-hidden mb-4">
+          <AccordionTrigger className="px-4 py-3 hover:no-underline">
+            <div className="flex items-center gap-2">
+              {ownershipRenounced ? 
+                <CheckCircle className="h-5 w-5 text-neon-cyan" /> : 
+                <AlertTriangle className="h-5 w-5 text-neon-purple" />
+              }
+              <span className="font-medium">Contract Ownership</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span>Owner Control Status</span>
+                {ownershipRenounced ? 
+                  <Badge className="bg-emerald-500/20 text-emerald-500">Renounced</Badge> : 
+                  <Badge className="bg-amber-500/20 text-amber-500">Active Owner</Badge>
+                }
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <span>Contract Verification</span>
+                {isVerified ? 
+                  <div className="flex items-center gap-2">
+                    <FileCheck className="h-4 w-4 text-emerald-500" />
+                    <span className="text-emerald-500">Verified</span>
+                  </div> : 
+                  <div className="flex items-center gap-2">
+                    <FileX className="h-4 w-4 text-red-500" />
+                    <span className="text-red-500">Unverified</span>
+                  </div>
+                }
+              </div>
+              
+              <div className="p-3 border border-muted rounded-md bg-muted/30">
+                <p className="text-sm text-muted-foreground">
+                  {ownershipRenounced ? 
+                    "Ownership of this contract has been renounced, meaning no single entity can modify the contract behavior. This greatly reduces the risk of malicious contract changes." :
+                    "This contract has an active owner who can modify certain contract behaviors. While this allows for upgrades and fixes, it also introduces risk of malicious changes."
+                  }
+                </p>
+                {!isVerified && (
+                  <p className="text-sm text-red-400 mt-2">
+                    Warning: This contract's source code is not verified, making it impossible to audit its functionality.
+                  </p>
+                )}
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="functions" className="glass-card border-muted rounded-xl overflow-hidden mb-4">
+          <AccordionTrigger className="px-4 py-3 hover:no-underline">
+            <div className="flex items-center gap-2">
+              <Code className="h-5 w-5 text-neon-pink" />
+              <span className="font-medium">Function Permissions</span>
+              {dangerousFunctions.length > 0 && (
+                <Badge className="ml-2 bg-red-500/20 text-red-500">{dangerousFunctions.length}</Badge>
+              )}
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            {dangerousFunctions.length > 0 ? (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  The following functions allow the contract owner or privileged addresses to modify contract behavior:
+                </p>
+                <div className="space-y-2">
+                  {dangerousFunctions.map((func, index) => (
+                    <div key={index} className="p-2 border border-muted rounded-md">
+                      <div className="flex items-center justify-between">
+                        <div className="font-mono text-sm">{func.name}()</div>
+                        {renderRiskLevel(func.risk)}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">{func.description}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="p-3 border border-red-500/20 rounded-md bg-red-500/5">
+                  <p className="text-sm text-muted-foreground">
+                    These functions could potentially be used to modify token behavior in ways that disadvantage holders. 
+                    {!ownershipRenounced && " Since ownership is not renounced, these functions remain a risk."}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="p-3 border border-emerald-500/20 rounded-md bg-emerald-500/5">
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckCircle className="h-5 w-5 text-emerald-500" />
+                  <span className="font-medium">No dangerous functions detected</span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  This contract doesn't contain common dangerous functions that could be used to manipulate the token or harm holders.
+                </p>
+              </div>
+            )}
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="fees" className="glass-card border-muted rounded-xl overflow-hidden mb-4">
+          <AccordionTrigger className="px-4 py-3 hover:no-underline">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-neon-cyan" />
+              <span className="font-medium">Transaction Fees</span>
+              {highFees && (
+                <Badge className="ml-2 bg-amber-500/20 text-amber-500">High</Badge>
+              )}
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="p-3 border border-muted rounded-md">
+                  <div className="text-sm text-muted-foreground">Buy Fee</div>
+                  <div className="text-xl font-medium">{buyFee}%</div>
+                </div>
+                
+                <div className="p-3 border border-muted rounded-md">
+                  <div className="text-sm text-muted-foreground">Sell Fee</div>
+                  <div className="text-xl font-medium">{sellFee}%</div>
+                </div>
+                
+                <div className="p-3 border border-muted rounded-md">
+                  <div className="text-sm text-muted-foreground">Total Fee</div>
+                  <div className="text-xl font-medium">{totalFee}%</div>
+                </div>
+              </div>
+              
+              <div className="p-3 border border-muted rounded-md bg-muted/30">
+                <p className="text-sm text-muted-foreground">
+                  {highFees ? 
+                    "This token has unusually high transaction fees, which could impact your trading profitability. High fees are sometimes used to fund project development but can also indicate potential issues." :
+                    "This token has reasonable transaction fees, which is generally a positive sign."
+                  }
+                </p>
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="distribution" className="glass-card border-muted rounded-xl overflow-hidden mb-4">
+          <AccordionTrigger className="px-4 py-3 hover:no-underline">
+            <div className="flex items-center gap-2">
+              <PieChart className="h-5 w-5 text-neon-purple" />
+              <span className="font-medium">Token Distribution</span>
+              {tokenDistribution[0].percentage > 20 && (
+                <Badge className="ml-2 bg-amber-500/20 text-amber-500">Concentrated</Badge>
+              )}
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            <div className="space-y-4">
+              <div className="relative pt-5">
+                <div className="flex mb-2">
+                  {tokenDistribution.map((item, i) => (
+                    <div 
+                      key={i}
+                      className="h-6" 
+                      style={{ 
+                        width: `${item.percentage}%`,
+                        backgroundColor: 
+                          i === 0 ? 'rgba(239, 68, 68, 0.7)' : 
+                          i === 1 ? 'rgba(245, 158, 11, 0.7)' :
+                          i === 2 ? 'rgba(16, 185, 129, 0.7)' :
+                          'rgba(99, 102, 241, 0.7)',
+                        borderRadius: '4px'
+                      }}
+                    />
+                  ))}
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2">
+                  {tokenDistribution.map((item, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ 
+                          backgroundColor: 
+                            i === 0 ? 'rgba(239, 68, 68, 0.7)' : 
+                            i === 1 ? 'rgba(245, 158, 11, 0.7)' :
+                            i === 2 ? 'rgba(16, 185, 129, 0.7)' :
+                            'rgba(99, 102, 241, 0.7)'
+                        }}
+                      />
+                      <span className="text-sm">{item.type}: {item.percentage}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="p-3 border border-muted rounded-md bg-muted/30">
+                <p className="text-sm text-muted-foreground">
+                  {tokenDistribution[0].percentage > 25 ? 
+                    "The top holder controls a significant portion of the total supply, which presents a risk of price manipulation." :
+                    tokenDistribution[0].percentage > 15 ?
+                    "Token distribution shows moderate concentration among top holders. While not ideal, this is common for newer tokens." :
+                    "This token has a healthy distribution pattern with no concerning concentration among top holders."
+                  }
+                </p>
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="social" className="glass-card border-muted rounded-xl overflow-hidden mb-4">
+          <AccordionTrigger className="px-4 py-3 hover:no-underline">
+            <div className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-neon-cyan" />
+              <span className="font-medium">Social & Dev Activity</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium">Project Links</h4>
+                <div className="flex flex-wrap gap-2">
+                  {socialLinks.website && (
+                    <a 
+                      href={socialLinks.website} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-muted rounded-md text-sm hover:bg-muted/80 transition-colors"
+                    >
+                      <Globe className="h-4 w-4" />
+                      Website
+                    </a>
+                  )}
+                  
+                  {socialLinks.twitter && (
+                    <a 
+                      href={socialLinks.twitter} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-muted rounded-md text-sm hover:bg-muted/80 transition-colors"
+                    >
+                      <Twitter className="h-4 w-4" />
+                      Twitter
+                    </a>
+                  )}
+                  
+                  {socialLinks.telegram && (
+                    <a 
+                      href={socialLinks.telegram} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-muted rounded-md text-sm hover:bg-muted/80 transition-colors"
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                      Telegram
+                    </a>
+                  )}
+                  
+                  {socialLinks.github && (
+                    <a 
+                      href={socialLinks.github} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-muted rounded-md text-sm hover:bg-muted/80 transition-colors"
+                    >
+                      <Github className="h-4 w-4" />
+                      GitHub
+                    </a>
+                  )}
+                  
+                  {Object.values(socialLinks).every(link => !link) && (
+                    <span className="text-sm text-muted-foreground">No official links found</span>
+                  )}
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium">Developer Activity</h4>
+                {devActivity.lastCommit ? (
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Last Commit</span>
+                      <span className="text-sm">
+                        {new Date(devActivity.lastCommit).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Commit Frequency</span>
+                      <span className="text-sm">{devActivity.commitFrequency}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Contributors</span>
+                      <span className="text-sm">{devActivity.contributors}</span>
+                    </div>
+                  </div>
                 ) : (
-                  <Tag className="h-8 w-8 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">No GitHub activity data available</span>
                 )}
               </div>
               
-              <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-xl font-bold">{tokenInfo?.name || "Unknown Token"}</h2>
-                  <Badge 
-                    variant="outline" 
-                    className={getNetworkBadgeColor(network)}
-                  >
-                    {getNetworkName(network)}
-                  </Badge>
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  {tokenInfo?.symbol || "???"}
-                </div>
+              <div className="p-3 border border-muted rounded-md bg-muted/30">
+                <p className="text-sm text-muted-foreground">
+                  {Object.values(socialLinks).some(link => link) ? 
+                    "This project has an established online presence, which is generally a positive sign. Always verify the authenticity of social links." :
+                    "No official social links were found for this token, which could be a concern. Legitimate projects typically maintain social channels for community engagement."
+                  }
+                  {devActivity.lastCommit && devActivity.commitFrequency !== "No recent activity" ? 
+                    " Developer activity shows ongoing project maintenance, suggesting continued development." :
+                    " Limited or no developer activity could indicate an abandoned or inactive project."
+                  }
+                </p>
               </div>
             </div>
-            
-            {/* Token Details */}
-            <div className="space-y-4">
-              {/* Contract Address */}
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Contract Address</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-mono">{truncateAddress(address)}</span>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-6 w-6" 
-                    onClick={() => copyToClipboard(address)}
-                  >
-                    <Copy className="h-3.5 w-3.5" />
-                    <span className="sr-only">Copy address</span>
-                  </Button>
-                  <a 
-                    href={getExplorerUrl(address)} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="h-6 w-6 flex items-center justify-center text-primary hover:text-primary/80"
-                  >
-                    <ExternalLink className="h-3.5 w-3.5" />
-                    <span className="sr-only">View on explorer</span>
-                  </a>
-                </div>
-              </div>
-              
-              {/* Creation Date */}
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Created On</span>
-                <div className="flex items-center gap-2">
-                  <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-sm">
-                    {tokenInfo?.creationDate ? formatDate(tokenInfo.creationDate) : "Unknown"}
-                  </span>
-                </div>
-              </div>
-              
-              {/* Creator Address */}
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Creator Address</span>
-                <div className="flex items-center gap-2">
-                  <User className="h-3.5 w-3.5 text-muted-foreground" />
-                  <a 
-                    href={tokenInfo?.creatorAddress ? getExplorerUrl(tokenInfo.creatorAddress) : '#'} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-sm font-mono hover:underline text-primary"
-                  >
-                    {tokenInfo?.creatorAddress ? truncateAddress(tokenInfo.creatorAddress) : "Unknown"}
-                  </a>
-                </div>
-              </div>
-              
-              {/* Verification Status */}
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Contract Verified</span>
-                <div className="flex items-center gap-2">
-                  {tokenInfo?.isVerified ? (
-                    <Badge variant="outline" className="border-emerald-500 bg-emerald-500/10 text-emerald-500">
-                      <FileCheck className="h-3.5 w-3.5 mr-1" />
-                      Verified
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="border-red-500 bg-red-500/10 text-red-500">
-                      <FileX className="h-3.5 w-3.5 mr-1" />
-                      Unverified
-                    </Badge>
-                  )}
-                </div>
-              </div>
-              
-              {/* Ownership Status */}
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Ownership Status</span>
-                <div className="flex items-center gap-2">
-                  {tokenInfo?.ownershipRenounced ? (
-                    <Badge variant="outline" className="border-emerald-500 bg-emerald-500/10 text-emerald-500">
-                      <Shield className="h-3.5 w-3.5 mr-1" />
-                      Renounced
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="border-amber-500 bg-amber-500/10 text-amber-500">
-                      <Landmark className="h-3.5 w-3.5 mr-1" />
-                      Owned
-                    </Badge>
-                  )}
-                </div>
-              </div>
-              
-              {/* Audits */}
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Audits Done</span>
-                <span className="text-sm">Coming Soon</span>
-              </div>
-              
-              {/* Categories/Tags */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <span className="text-sm text-muted-foreground">Categories</span>
-                <div className="flex flex-wrap gap-2">
-                  {tokenInfo?.tags ? (
-                    tokenInfo.tags.map((tag: string, index: number) => (
-                      <Badge key={index} variant="outline" className="border-neon-cyan bg-neon-cyan/10 text-neon-cyan">
-                        {tag}
-                      </Badge>
-                    ))
-                  ) : (
-                    <span className="text-sm text-muted-foreground">No categories available</span>
-                  )}
-                </div>
-              </div>
-              
-              {/* Risk Score */}
-              <div className="pt-2">
-                {renderRiskMeter(tokenInfo?.riskScore || 0, tokenInfo?.maxScore || 550)}
-              </div>
-              
-              {/* Honeypot Status */}
-              <div className="flex items-center justify-between pt-2">
-                <span className="text-sm text-muted-foreground">Last Known Status</span>
-                {renderHoneypotStatus(honeypotStatus)}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </div>
   );
 };
