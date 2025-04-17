@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   AlertTriangle,
   CheckCircle,
@@ -20,13 +20,10 @@ import {
   MessageCircle,
   Github,
   BarChart3,
+  ChevronDown,
+  ChevronUp,
   AlertCircle,
-  Info,
-  Calendar,
-  User,
-  Copy,
-  Search,
-  Tag
+  Info
 } from 'lucide-react';
 import {
   Card,
@@ -45,22 +42,17 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { toast } from 'sonner';
 
 interface TokenAnalysisProps {
   address: string;
   network: string;
   tokenData: any;
-  tokenDetails: any;
-  aiScores: any;
 }
 
 const TokenAnalysis: React.FC<TokenAnalysisProps> = ({ 
   address, 
   network,
-  tokenData,
-  tokenDetails,
-  aiScores
+  tokenData 
 }) => {
   if (!tokenData || !tokenData.supported) {
     return (
@@ -102,193 +94,163 @@ const TokenAnalysis: React.FC<TokenAnalysisProps> = ({
     devActivity
   } = tokenData;
 
-  const tokenName = tokenDetails?.name || 'Unknown Token';
-  const tokenSymbol = tokenDetails?.symbol || '???';
-  const createdAt = tokenDetails?.createdAt ? new Date(tokenDetails.createdAt).toLocaleDateString() : 'Unknown';
-  const creator = tokenDetails?.creator || 'Unknown';
-
-  const copyAddressToClipboard = () => {
-    navigator.clipboard.writeText(address);
-    toast.success("Address copied to clipboard");
+  const renderSafetyBadge = (level: string) => {
+    switch (level) {
+      case 'Safe':
+        return (
+          <Badge className="bg-emerald-500/20 text-emerald-500 border-emerald-500">
+            <CheckCircle className="h-3.5 w-3.5 mr-1" />
+            Safe
+          </Badge>
+        );
+      case 'Caution':
+        return (
+          <Badge className="bg-amber-500/20 text-amber-500 border-amber-500">
+            <AlertTriangle className="h-3.5 w-3.5 mr-1" />
+            Caution
+          </Badge>
+        );
+      case 'High Risk':
+        return (
+          <Badge className="bg-red-500/20 text-red-500 border-red-500">
+            <XCircle className="h-3.5 w-3.5 mr-1" />
+            High Risk
+          </Badge>
+        );
+      default:
+        return null;
+    }
   };
 
-  const copyCreatorToClipboard = () => {
-    navigator.clipboard.writeText(creator);
-    toast.success("Creator address copied to clipboard");
+  const renderStatus = (passed: boolean, label?: string) => {
+    if (passed) {
+      return (
+        <Badge variant="outline" className="border-emerald-500 bg-emerald-500/10 text-emerald-500">
+          <CheckCircle className="h-3.5 w-3.5 mr-1" />
+          {label || 'Passed'}
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="outline" className="border-red-500 bg-red-500/10 text-red-500">
+        <XCircle className="h-3.5 w-3.5 mr-1" />
+        {label || 'Failed'}
+      </Badge>
+    );
   };
 
-  const getCreatorExplorerUrl = () => {
-    const explorers: Record<string, string> = {
-      ethereum: 'https://etherscan.io/address/',
-      binance: 'https://bscscan.com/address/',
-      polygon: 'https://polygonscan.com/address/',
-      arbitrum: 'https://arbiscan.io/address/',
-      optimism: 'https://optimistic.etherscan.io/address/',
-      avalanche: 'https://snowtrace.io/address/',
-      fantom: 'https://ftmscan.com/address/',
-      l1x: 'https://explorer.l1x.io/address/',
-      solana: 'https://solana.fm/address/',
-      base: 'https://basescan.org/address/',
-      zksync: 'https://explorer.zksync.io/address/',
-    };
-    
-    return (explorers[network] || explorers.ethereum) + creator;
+  const renderWarning = (label: string) => {
+    return (
+      <Badge variant="outline" className="border-amber-500 bg-amber-500/10 text-amber-500">
+        <AlertTriangle className="h-3.5 w-3.5 mr-1" />
+        {label}
+      </Badge>
+    );
   };
 
-  // Token logo placeholder
-  const tokenLogo = `https://via.placeholder.com/64?text=${tokenSymbol.charAt(0)}`;
+  const renderRiskLevel = (risk: string) => {
+    switch (risk) {
+      case 'High':
+        return (
+          <Badge className="bg-red-500/20 text-red-500 border-red-500">
+            High Risk
+          </Badge>
+        );
+      case 'Medium':
+        return (
+          <Badge className="bg-amber-500/20 text-amber-500 border-amber-500">
+            Medium Risk
+          </Badge>
+        );
+      case 'Low':
+        return (
+          <Badge className="bg-emerald-500/20 text-emerald-500 border-emerald-500">
+            Low Risk
+          </Badge>
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="space-y-6 mb-8">
-      {/* Token Overview Card */}
-      <Card className="w-full glass-card">
+      <Card className="w-full glass-card border-neon-cyan">
         <CardHeader>
-          <div className="flex items-center gap-4">
-            <div className="h-16 w-16 rounded-full bg-muted/50 flex items-center justify-center overflow-hidden">
-              <img src={tokenLogo} alt={tokenName} className="h-full w-full object-cover" />
-            </div>
-            <div>
-              <CardTitle className="text-2xl flex items-center gap-2">
-                {tokenName} <span className="text-lg text-muted-foreground">({tokenSymbol})</span>
-              </CardTitle>
-              <CardDescription className="flex flex-wrap items-center gap-2 mt-1">
-                <div className="flex items-center">
-                  <span className="text-sm font-mono">{address.slice(0, 6)}...{address.slice(-4)}</span>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-6 w-6 ml-1" 
-                    onClick={copyAddressToClipboard}
-                  >
-                    <Copy className="h-3 w-3" />
-                    <span className="sr-only">Copy address</span>
-                  </Button>
-                </div>
-              </CardDescription>
-            </div>
+          <div className="flex justify-between items-center">
+            <CardTitle className="text-xl flex items-center gap-2">
+              <ShieldAlert className="h-5 w-5 text-neon-cyan" />
+              Token Security Analysis
+            </CardTitle>
+            {renderSafetyBadge(safetyLevel)}
           </div>
+          <CardDescription>
+            Comprehensive security analysis of this token contract
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Created On:</span>
-                <span className="text-sm font-medium">{createdAt}</span>
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm font-medium">Overall Safety Score</span>
+              <span className="text-lg font-bold">{safetyScore}/100</span>
+            </div>
+            <Progress 
+              value={safetyScore} 
+              className="h-2.5"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Honeypot Risk</span>
+                {renderRiskLevel(honeypotRisk)}
               </div>
-              
-              <div className="flex items-center gap-2">
-                <User className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Creator:</span>
-                <a 
-                  href={getCreatorExplorerUrl()}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm font-medium text-primary hover:underline flex items-center"
-                >
-                  {creator.slice(0, 6)}...{creator.slice(-4)}
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-5 w-5 ml-1" 
-                    onClick={copyCreatorToClipboard}
-                  >
-                    <Copy className="h-3 w-3" />
-                  </Button>
-                </a>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Ownership</span>
+                {ownershipRenounced ? renderStatus(true, "Renounced") : renderWarning("Modifiable")}
               </div>
-              
-              <div className="flex items-center gap-2">
-                <Lock className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Ownership:</span>
-                {ownershipRenounced ? (
-                  <Badge className="bg-emerald-500/20 text-emerald-500">Renounced</Badge>
-                ) : (
-                  <Badge className="bg-amber-500/20 text-amber-500">Active Owner</Badge>
-                )}
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <FileCheck className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Audits:</span>
-                <span className="text-sm">Coming Soon</span>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Liquidity</span>
+                {liquidityLocked ? renderStatus(true, "Locked") : renderWarning("Unlocked")}
               </div>
             </div>
-            
-            <div className="space-y-5">
-              {/* Unified Risk Rating */}
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <div className="flex items-center gap-1.5">
-                    <ShieldAlert className="h-4 w-4 text-neon-cyan" />
-                    <span className="text-sm font-medium">Risk Rating</span>
-                  </div>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <Badge className="bg-neon-cyan/20 text-neon-cyan">
-                          {safetyScore}/100
-                        </Badge>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="text-xs">Overall safety score based on multiple security factors</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-                
-                {/* Gradient progress bar for risk rating */}
-                <div className="h-2.5 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden relative mb-1">
-                  <div 
-                    className="absolute top-0 bottom-0 left-0 rounded-full" 
-                    style={{ 
-                      width: `${safetyScore}%`, 
-                      background: 'linear-gradient(90deg, rgb(239, 68, 68) 0%, rgb(245, 158, 11) 50%, rgb(16, 185, 129) 100%)' 
-                    }}
-                  />
-                </div>
-                
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>High Risk</span>
-                  <span>Moderate</span>
-                  <span>Low Risk</span>
-                </div>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Contract</span>
+                {isVerified ? renderStatus(true, "Verified") : renderStatus(false, "Unverified")}
               </div>
-              
-              {/* Latest Status */}
-              <div className="flex items-center justify-between mt-4 p-3 bg-muted/20 rounded-md">
-                <div className="flex items-center gap-2">
-                  <Search className="h-4 w-4 text-neon-purple animate-pulse" />
-                  <span className="text-sm font-medium">Latest Status</span>
-                </div>
-                <Badge className={honeypotRisk === 'Low' ? 'bg-emerald-500/20 text-emerald-500' : honeypotRisk === 'Medium' ? 'bg-amber-500/20 text-amber-500' : 'bg-red-500/20 text-red-500'}>
-                  {isSellable ? 'Not a Honeypot' : 'Possible Honeypot'}
-                </Badge>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Trading</span>
+                {isSellable ? renderStatus(true, "Can Sell") : renderStatus(false, "Can't Sell")}
               </div>
-              
-              {/* Categories */}
-              {aiScores?.categories && aiScores.categories.length > 0 && (
-                <div className="mt-4">
-                  <div className="flex items-center gap-1.5 mb-2">
-                    <Tag className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">Categories</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {aiScores.categories.map((category: string, index: number) => (
-                      <Badge key={index} variant="outline">
-                        {category}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Fees</span>
+                {highFees ? renderWarning(`High (${totalFee}%)`) : renderStatus(true, `Normal (${totalFee}%)`)}
+              </div>
             </div>
           </div>
         </CardContent>
+        <CardFooter className="flex flex-col">
+          <div className="w-full p-3 border border-muted rounded-md bg-muted/30">
+            <h4 className="font-medium mb-2 flex items-center gap-1.5">
+              <Info className="h-4 w-4 text-neon-cyan" />
+              Should you trust this token?
+            </h4>
+            <p className="text-sm text-muted-foreground">
+              {safetyLevel === 'Safe' ? 
+                "This token contract appears to have good security practices with minimal risk factors. As always, do your own research before investing." :
+                safetyLevel === 'Caution' ?
+                "This token has some potential risk factors that warrant caution. Review the detailed analysis before making any investment decisions." :
+                "This token shows multiple high-risk indicators. Proceed with extreme caution as there's a significant risk of loss."
+              }
+            </p>
+          </div>
+        </CardFooter>
       </Card>
 
-      {/* Honeypot Test */}
-      <Card className="w-full glass-card">
+      {/* Honeypot Test - No dropdown, fully visible */}
+      <Card className="w-full glass-card border-muted rounded-xl overflow-hidden mb-4">
         <CardHeader className="px-4 py-3">
           <CardTitle className="text-lg flex items-center gap-2">
             <CircleDollarSign className="h-5 w-5 text-neon-cyan" />
@@ -333,8 +295,8 @@ const TokenAnalysis: React.FC<TokenAnalysisProps> = ({
         </CardContent>
       </Card>
 
-      {/* Liquidity Pool Info */}
-      <Card className="w-full glass-card">
+      {/* Liquidity Pool Info - No dropdown, fully visible */}
+      <Card className="w-full glass-card border-muted rounded-xl overflow-hidden mb-4">
         <CardHeader className="px-4 py-3">
           <CardTitle className="text-lg flex items-center gap-2">
             {liquidityLocked ? 
@@ -384,8 +346,8 @@ const TokenAnalysis: React.FC<TokenAnalysisProps> = ({
         </CardContent>
       </Card>
 
-      {/* Contract Ownership */}
-      <Card className="w-full glass-card">
+      {/* Contract Ownership - No dropdown, fully visible */}
+      <Card className="w-full glass-card border-muted rounded-xl overflow-hidden mb-4">
         <CardHeader className="px-4 py-3">
           <CardTitle className="text-lg flex items-center gap-2">
             {ownershipRenounced ? 
@@ -436,8 +398,8 @@ const TokenAnalysis: React.FC<TokenAnalysisProps> = ({
         </CardContent>
       </Card>
 
-      {/* Function Permissions */}
-      <Card className="w-full glass-card">
+      {/* Function Permissions - No dropdown, fully visible */}
+      <Card className="w-full glass-card border-muted rounded-xl overflow-hidden mb-4">
         <CardHeader className="px-4 py-3">
           <CardTitle className="text-lg flex items-center gap-2">
             <Code className="h-5 w-5 text-neon-pink" />
@@ -458,9 +420,7 @@ const TokenAnalysis: React.FC<TokenAnalysisProps> = ({
                   <div key={index} className="p-2 border border-muted rounded-md">
                     <div className="flex items-center justify-between">
                       <div className="font-mono text-sm">{func.name}()</div>
-                      <Badge className={func.risk === 'High' ? 'bg-red-500/20 text-red-500' : func.risk === 'Medium' ? 'bg-amber-500/20 text-amber-500' : 'bg-emerald-500/20 text-emerald-500'}>
-                        {func.risk} Risk
-                      </Badge>
+                      {renderRiskLevel(func.risk)}
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">{func.description}</p>
                   </div>
@@ -487,8 +447,8 @@ const TokenAnalysis: React.FC<TokenAnalysisProps> = ({
         </CardContent>
       </Card>
 
-      {/* Transaction Fees */}
-      <Card className="w-full glass-card">
+      {/* Transaction Fees - No dropdown, fully visible */}
+      <Card className="w-full glass-card border-muted rounded-xl overflow-hidden mb-4">
         <CardHeader className="px-4 py-3">
           <CardTitle className="text-lg flex items-center gap-2">
             <BarChart3 className="h-5 w-5 text-neon-cyan" />
@@ -529,8 +489,8 @@ const TokenAnalysis: React.FC<TokenAnalysisProps> = ({
         </CardContent>
       </Card>
 
-      {/* Token Distribution */}
-      <Card className="w-full glass-card">
+      {/* Token Distribution - No dropdown, fully visible */}
+      <Card className="w-full glass-card border-muted rounded-xl overflow-hidden mb-4">
         <CardHeader className="px-4 py-3">
           <CardTitle className="text-lg flex items-center gap-2">
             <PieChart className="h-5 w-5 text-neon-purple" />
@@ -594,8 +554,8 @@ const TokenAnalysis: React.FC<TokenAnalysisProps> = ({
         </CardContent>
       </Card>
 
-      {/* Social & Dev Activity */}
-      <Card className="w-full glass-card">
+      {/* Social & Dev Activity - No dropdown, fully visible */}
+      <Card className="w-full glass-card border-muted rounded-xl overflow-hidden mb-4">
         <CardHeader className="px-4 py-3">
           <CardTitle className="text-lg flex items-center gap-2">
             <Users className="h-5 w-5 text-neon-cyan" />

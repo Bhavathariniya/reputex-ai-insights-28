@@ -1,15 +1,24 @@
-import React, { useState, useEffect, useRef } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import LandingPage from '@/components/LandingPage';
+import AddressInput from '@/components/AddressInput';
 import LoadingAnimation from '@/components/LoadingAnimation';
 import AnalysisReport from '@/components/AnalysisReport';
-import AnalysisDashboard from '@/components/AnalysisDashboard';
 import { toast } from 'sonner';
-import { Volume2, VolumeX } from 'lucide-react';
+import { Volume2, VolumeX, Shield } from 'lucide-react';
+import {
+  getWalletTransactions,
+  getTokenData,
+  getRepoActivity,
+  getAIAnalysis,
+  checkBlockchainForScore,
+  storeScoreOnBlockchain,
+  getSocialSentiment,
+  detectScamIndicators,
+} from '@/lib/api-client';
 import { isContract, detectBlockchain } from '@/lib/chain-detection';
-import { getAggregatedAnalysis } from '@/lib/blockchain-api';
 
 const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -17,24 +26,20 @@ const Index = () => {
   const [searchedAddress, setSearchedAddress] = useState<string | null>(null);
   const [searchedNetwork, setSearchedNetwork] = useState<string>('ethereum');
   const [audioEnabled, setAudioEnabled] = useState<boolean>(false);
-  const [addressType, setAddressType] = useState<'token' | 'wallet' | null>(null);
+  const [addressType, setAddressType] = useState<'wallet' | 'contract' | null>(null);
   const [isAutoDetecting, setIsAutoDetecting] = useState<boolean>(false);
-  const [showDashboard, setShowDashboard] = useState<boolean>(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const analyzeRef = useRef<HTMLDivElement>(null);
 
   // Check for address in URL query params
   useEffect(() => {
     const query = new URLSearchParams(location.search);
     const addressParam = query.get('address');
     const networkParam = query.get('network') || 'ethereum';
-    const viewParam = query.get('view') || 'report';
     
     if (addressParam) {
       setSearchedAddress(addressParam);
       setSearchedNetwork(networkParam);
-      setShowDashboard(viewParam === 'dashboard');
       handleAddressSearch(addressParam, networkParam);
     }
   }, [location]);
@@ -71,22 +76,76 @@ const Index = () => {
     }
     
     try {
-      // Determine address type (token or wallet)
+      // First check if we already have this score on the blockchain
+      const existingScoreResponse = await checkBlockchainForScore(address, resolvedNetwork);
+      
+      if (existingScoreResponse.data) {
+        // Use existing score
+        setAnalysis(existingScoreResponse.data);
+        toast.success('Retrieved existing analysis from blockchain');
+        setIsLoading(false);
+        
+        // Set the address type based on the stored data
+        setAddressType(existingScoreResponse.data.address_type || null);
+        return;
+      }
+      
+      // If no existing score, perform new analysis
+      // First determine if this is a contract or wallet
       const isContractAddress = await isContract(address, resolvedNetwork);
-      setAddressType(isContractAddress ? 'token' : 'wallet');
+      setAddressType(isContractAddress ? 'contract' : 'wallet');
       
-      // Get aggregated analysis
-      const aggregatedData = await getAggregatedAnalysis(address, resolvedNetwork);
+      // Fetch wallet transaction data
+      const walletData = await getWalletTransactions(address, resolvedNetwork);
       
-      // Set the analysis data
-      setAnalysis(aggregatedData);
+      // Fetch token data (if it's a contract)
+      const tokenData = await getTokenData(address, resolvedNetwork);
       
-      toast.success(`Analysis complete for ${resolvedNetwork} ${aggregatedData.addressType}`);
+      // Simulate GitHub repo activity (relevant mainly for contracts/tokens)
+      const repoData = await getRepoActivity("example/repo");
       
-      // Scroll to the analysis section
-      setTimeout(() => {
-        analyzeRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, 500);
+      // Get social sentiment data
+      const sentimentData = await getSocialSentiment(address, resolvedNetwork);
+      
+      // Detect scam indicators
+      const scamData = await detectScamIndicators(address, tokenData.data, resolvedNetwork);
+      
+      // Aggregate the data
+      const aggregatedData = {
+        ...walletData.data,
+        ...tokenData.data,
+        ...repoData.data,
+        ...sentimentData.data,
+        ...scamData.data,
+        community_size: "Medium", // Simulated community size
+        network: resolvedNetwork,
+        address_type: isContractAddress ? 'contract' : 'wallet',
+      };
+      
+      // Get enhanced AI analysis
+      const aiAnalysisResponse = await getAIAnalysis(aggregatedData);
+      
+      if (aiAnalysisResponse.data) {
+        // Prepare the final analysis data with all scores and indicators
+        const enhancedData = {
+          ...aiAnalysisResponse.data,
+          network: resolvedNetwork,
+          address_type: isContractAddress ? 'contract' : 'wallet',
+          sentimentData: aiAnalysisResponse.data.sentiment_data,
+          scamIndicators: aiAnalysisResponse.data.scam_indicators,
+        };
+        
+        // Store the analysis result
+        setAnalysis(enhancedData);
+        
+        // Store on blockchain
+        await storeScoreOnBlockchain(address, enhancedData);
+        
+        const addressTypeText = isContractAddress ? 'contract' : 'wallet';
+        toast.success(`Enhanced analysis complete for ${resolvedNetwork} ${addressTypeText}`);
+      } else {
+        toast.error('Failed to analyze address');
+      }
     } catch (error) {
       console.error('Error in analysis process:', error);
       toast.error('Analysis failed. Please try again.');
@@ -99,22 +158,7 @@ const Index = () => {
     setSearchedAddress(address);
     setSearchedNetwork(network);
     // Update URL with the address and network parameters
-    navigate(`/?address=${address}&network=${network}&view=${showDashboard ? 'dashboard' : 'report'}`);
-  };
-
-  const toggleView = () => {
-    setShowDashboard(!showDashboard);
-    if (searchedAddress) {
-      navigate(`/?address=${searchedAddress}&network=${searchedNetwork}&view=${!showDashboard ? 'dashboard' : 'report'}`);
-    }
-  };
-
-  const handleNetworkChange = (network: string) => {
-    setSearchedNetwork(network);
-    if (searchedAddress) {
-      navigate(`/?address=${searchedAddress}&network=${network}&view=${showDashboard ? 'dashboard' : 'report'}`);
-      handleAddressSearch(searchedAddress, network);
-    }
+    navigate(`/?address=${address}&network=${network}`);
   };
 
   const toggleAudio = () => {
@@ -153,38 +197,58 @@ const Index = () => {
         )}
       </div>
       
-      <main className="flex-grow pt-16 pb-16 relative z-10">
-        {/* No analysis yet - show landing page */}
-        {!analysis && !isLoading && !isAutoDetecting && (
-          <LandingPage onAddressSubmit={handleSubmit} />
-        )}
-        
-        {/* Loading state */}
-        {(isLoading || isAutoDetecting) && (
-          <div className="container mx-auto px-4 py-20 text-center">
-            <LoadingAnimation />
+      <main className="flex-grow pt-32 pb-16 px-4 container mx-auto relative z-10">
+        <section className="mb-12 text-center">
+          <div className="shield-logo mx-auto mb-6 w-20 h-20 flex items-center justify-center">
+            <Shield className="w-16 h-16 text-neon-cyan" />
           </div>
-        )}
+          
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 animate-float">
+            <span className="neon-text">ReputeX AI</span>
+          </h1>
+          
+          <p className="tagline max-w-2xl mx-auto">
+            Web3's Multi-Chain AI-Powered Reputation Shield – Detect Scams & Invest Fearlessly Across All Major Blockchains.
+          </p>
+          
+          <AddressInput onSubmit={handleSubmit} isLoading={isLoading || isAutoDetecting} />
+        </section>
         
-        {/* Analysis result */}
-        <div ref={analyzeRef}>
+        <section className="container mx-auto">
+          {(isLoading || isAutoDetecting) && <LoadingAnimation />}
+          
           {!isLoading && !isAutoDetecting && analysis && searchedAddress && (
-            <>
-              {showDashboard ? (
-                <AnalysisDashboard 
-                  address={searchedAddress}
-                  network={searchedNetwork} 
-                  onNetworkChange={handleNetworkChange}
-                />
-              ) : (
-                <AnalysisReport
-                  address={searchedAddress}
-                  network={searchedNetwork || 'ethereum'}
-                />
-              )}
-            </>
+            <AnalysisReport
+              address={searchedAddress}
+              network={searchedNetwork || 'ethereum'}
+              scores={{
+                trust_score: analysis.trust_score,
+                developer_score: analysis.developer_score,
+                liquidity_score: analysis.liquidity_score,
+                community_score: analysis.community_score,
+                holder_distribution: analysis.holder_distribution,
+                fraud_risk: analysis.fraud_risk,
+                social_sentiment: analysis.social_sentiment,
+                confidence_score: analysis.confidence_score,
+              }}
+              analysis={analysis.analysis}
+              timestamp={analysis.timestamp}
+              sentimentData={analysis.sentimentData}
+              scamIndicators={analysis.scamIndicators}
+            />
           )}
-        </div>
+          
+          {!isLoading && !isAutoDetecting && !analysis && (
+            <div className="max-w-4xl mx-auto mt-10">
+              <div className="glowing-card rounded-xl p-8 text-center">
+                <h3 className="text-2xl font-semibold mb-4">Enter an address to analyze</h3>
+                <p className="text-muted-foreground">
+                  Get comprehensive reputation scores, security analysis, and AI fraud detection for any blockchain wallet or token address across 12 major blockchains.
+                </p>
+              </div>
+            </div>
+          )}
+        </section>
       </main>
       
       <Footer />
