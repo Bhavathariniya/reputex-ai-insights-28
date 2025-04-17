@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -8,17 +7,8 @@ import LoadingAnimation from '@/components/LoadingAnimation';
 import AnalysisReport from '@/components/AnalysisReport';
 import { toast } from 'sonner';
 import { Volume2, VolumeX, Shield } from 'lucide-react';
-import {
-  getWalletTransactions,
-  getTokenData,
-  getRepoActivity,
-  getAIAnalysis,
-  checkBlockchainForScore,
-  storeScoreOnBlockchain,
-  getSocialSentiment,
-  detectScamIndicators,
-} from '@/lib/api-client';
 import { isContract, detectBlockchain } from '@/lib/chain-detection';
+import { getAggregatedAnalysis } from '@/lib/blockchain-api';
 
 const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -26,7 +16,7 @@ const Index = () => {
   const [searchedAddress, setSearchedAddress] = useState<string | null>(null);
   const [searchedNetwork, setSearchedNetwork] = useState<string>('ethereum');
   const [audioEnabled, setAudioEnabled] = useState<boolean>(false);
-  const [addressType, setAddressType] = useState<'wallet' | 'contract' | null>(null);
+  const [addressType, setAddressType] = useState<'token' | 'wallet' | null>(null);
   const [isAutoDetecting, setIsAutoDetecting] = useState<boolean>(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -76,76 +66,17 @@ const Index = () => {
     }
     
     try {
-      // First check if we already have this score on the blockchain
-      const existingScoreResponse = await checkBlockchainForScore(address, resolvedNetwork);
-      
-      if (existingScoreResponse.data) {
-        // Use existing score
-        setAnalysis(existingScoreResponse.data);
-        toast.success('Retrieved existing analysis from blockchain');
-        setIsLoading(false);
-        
-        // Set the address type based on the stored data
-        setAddressType(existingScoreResponse.data.address_type || null);
-        return;
-      }
-      
-      // If no existing score, perform new analysis
-      // First determine if this is a contract or wallet
+      // Determine address type (token or wallet)
       const isContractAddress = await isContract(address, resolvedNetwork);
-      setAddressType(isContractAddress ? 'contract' : 'wallet');
+      setAddressType(isContractAddress ? 'token' : 'wallet');
       
-      // Fetch wallet transaction data
-      const walletData = await getWalletTransactions(address, resolvedNetwork);
+      // Get aggregated analysis
+      const aggregatedData = await getAggregatedAnalysis(address, resolvedNetwork);
       
-      // Fetch token data (if it's a contract)
-      const tokenData = await getTokenData(address, resolvedNetwork);
+      // Set the analysis data
+      setAnalysis(aggregatedData);
       
-      // Simulate GitHub repo activity (relevant mainly for contracts/tokens)
-      const repoData = await getRepoActivity("example/repo");
-      
-      // Get social sentiment data
-      const sentimentData = await getSocialSentiment(address, resolvedNetwork);
-      
-      // Detect scam indicators
-      const scamData = await detectScamIndicators(address, tokenData.data, resolvedNetwork);
-      
-      // Aggregate the data
-      const aggregatedData = {
-        ...walletData.data,
-        ...tokenData.data,
-        ...repoData.data,
-        ...sentimentData.data,
-        ...scamData.data,
-        community_size: "Medium", // Simulated community size
-        network: resolvedNetwork,
-        address_type: isContractAddress ? 'contract' : 'wallet',
-      };
-      
-      // Get enhanced AI analysis
-      const aiAnalysisResponse = await getAIAnalysis(aggregatedData);
-      
-      if (aiAnalysisResponse.data) {
-        // Prepare the final analysis data with all scores and indicators
-        const enhancedData = {
-          ...aiAnalysisResponse.data,
-          network: resolvedNetwork,
-          address_type: isContractAddress ? 'contract' : 'wallet',
-          sentimentData: aiAnalysisResponse.data.sentiment_data,
-          scamIndicators: aiAnalysisResponse.data.scam_indicators,
-        };
-        
-        // Store the analysis result
-        setAnalysis(enhancedData);
-        
-        // Store on blockchain
-        await storeScoreOnBlockchain(address, enhancedData);
-        
-        const addressTypeText = isContractAddress ? 'contract' : 'wallet';
-        toast.success(`Enhanced analysis complete for ${resolvedNetwork} ${addressTypeText}`);
-      } else {
-        toast.error('Failed to analyze address');
-      }
+      toast.success(`Analysis complete for ${resolvedNetwork} ${aggregatedData.addressType}`);
     } catch (error) {
       console.error('Error in analysis process:', error);
       toast.error('Analysis failed. Please try again.');
@@ -221,20 +152,6 @@ const Index = () => {
             <AnalysisReport
               address={searchedAddress}
               network={searchedNetwork || 'ethereum'}
-              scores={{
-                trust_score: analysis.trust_score,
-                developer_score: analysis.developer_score,
-                liquidity_score: analysis.liquidity_score,
-                community_score: analysis.community_score,
-                holder_distribution: analysis.holder_distribution,
-                fraud_risk: analysis.fraud_risk,
-                social_sentiment: analysis.social_sentiment,
-                confidence_score: analysis.confidence_score,
-              }}
-              analysis={analysis.analysis}
-              timestamp={analysis.timestamp}
-              sentimentData={analysis.sentimentData}
-              scamIndicators={analysis.scamIndicators}
             />
           )}
           

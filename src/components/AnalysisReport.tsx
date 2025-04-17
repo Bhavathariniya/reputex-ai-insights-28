@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import ScoreCard from '@/components/ScoreCard';
 import TokenAnalysis from '@/components/TokenAnalysis';
@@ -7,14 +8,11 @@ import {
   Link as LinkIcon, 
   ExternalLink,
   Shield,
-  Droplet,
-  Users,
-  BarChart2,
-  AlertTriangle,
-  Info,
   CheckCircle,
   XCircle,
-  Volume2,
+  AlertTriangle,
+  Info,
+  Copy,
   MessageCircle,
   Tag
 } from 'lucide-react';
@@ -23,12 +21,13 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/h
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { analyzeTokenSecurity } from '@/lib/chain-detection';
+import { getAggregatedAnalysis } from '@/lib/blockchain-api';
+import { toast } from 'sonner';
 
 interface AnalysisReportProps {
   address: string;
   network: string;
-  scores: {
+  scores?: {
     trust_score: number;
     developer_score: number;
     liquidity_score: number;
@@ -38,8 +37,8 @@ interface AnalysisReportProps {
     social_sentiment?: number;
     confidence_score?: number;
   };
-  analysis: string;
-  timestamp: string;
+  analysis?: string;
+  timestamp?: string;
   sentimentData?: {
     sentiment: 'positive' | 'neutral' | 'negative' | 'mixed';
     keywords: string[];
@@ -107,13 +106,57 @@ const AnalysisReport: React.FC<AnalysisReportProps> = ({
   sentimentData,
   scamIndicators
 }) => {
-  const formattedAddress = address.slice(0, 6) + '...' + address.slice(-4);
-  const timeAgo = formatDistanceToNow(new Date(timestamp), { addSuffix: true });
+  const [isLoading, setIsLoading] = useState(true);
+  const [analysisData, setAnalysisData] = useState<any>(null);
   const [audioPlayed, setAudioPlayed] = useState(false);
-  const [tokenSecurityData, setTokenSecurityData] = useState<any>(null);
-  const [isTokenAnalysisLoading, setIsTokenAnalysisLoading] = useState(false);
+
+  // Fetch real-time blockchain data
+  useEffect(() => {
+    async function fetchAnalysisData() {
+      if (address && network) {
+        try {
+          setIsLoading(true);
+          const data = await getAggregatedAnalysis(address, network);
+          setAnalysisData(data);
+          
+          // Use either the fetched analysis or the props
+          if (!analysis) {
+            analysis = data.aiAnalysis.analysis;
+          }
+          if (!scores) {
+            scores = {
+              trust_score: data.aiAnalysis.trust_score,
+              developer_score: data.aiAnalysis.developer_score,
+              liquidity_score: data.aiAnalysis.liquidity_score,
+              community_score: data.aiAnalysis.community_score,
+              holder_distribution: data.aiAnalysis.holder_distribution,
+              fraud_risk: data.aiAnalysis.fraud_risk,
+              social_sentiment: data.aiAnalysis.social_sentiment,
+              confidence_score: data.aiAnalysis.confidence_score
+            };
+          }
+          if (!scamIndicators) {
+            scamIndicators = data.aiAnalysis.scam_indicators;
+          }
+          if (!timestamp) {
+            timestamp = data.aiAnalysis.timestamp;
+          }
+        } catch (error) {
+          console.error("Error fetching analysis data:", error);
+          toast.error("Failed to fetch blockchain data");
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    }
+    
+    fetchAnalysisData();
+  }, [address, network]);
   
-  const sentences = analysis.split('. ').filter(Boolean);
+  const formattedAddress = address.slice(0, 6) + '...' + address.slice(-4);
+  const timeAgo = timestamp ? formatDistanceToNow(new Date(timestamp), { addSuffix: true }) : '';
+  
+  const sentences = analysis ? analysis.split('. ').filter(Boolean) : [];
   
   const getExplorerUrl = () => {
     const explorers: Record<string, string> = {
@@ -134,18 +177,17 @@ const AnalysisReport: React.FC<AnalysisReportProps> = ({
     return (explorers[network] || explorers.ethereum) + address;
   };
   
-  const scoreDescriptions = {
-    trust: "Overall trust level based on transaction history, contract verification, and behavior patterns",
-    developer: "Assessment of code quality, development activity, and technical implementation",
-    liquidity: "Market depth, trading volume reliability, and token accessibility",
-    community: "Evaluation of community size, engagement levels, and sentiment analysis",
-    holders: "Analysis of token distribution across different wallet types and concentration patterns",
-    fraud: "Probability assessment of fraudulent activity or scam indicators",
-    sentiment: "Real-time analysis of social media sentiment across platforms",
-    confidence: "Confidence level in the overall assessment based on data quality and completeness"
-  };
-  
   const calculateVerdict = () => {
+    if (!scores) {
+      return {
+        verdict: "Analysis in progress",
+        icon: <AlertTriangle className="h-6 w-6 text-neon-orange" />,
+        color: "border-neon-orange bg-[#FF8630]/10 text-neon-orange",
+        description: "Collecting and analyzing blockchain data...",
+        audioFile: ""
+      };
+    }
+    
     const availableScores = [
       scores.trust_score, 
       scores.developer_score, 
@@ -203,8 +245,9 @@ const AnalysisReport: React.FC<AnalysisReportProps> = ({
   
   const verdictInfo = calculateVerdict();
   
+  // Play audio based on verdict
   useEffect(() => {
-    if (!audioPlayed) {
+    if (!audioPlayed && verdictInfo.audioFile) {
       try {
         const audio = new Audio(`/${verdictInfo.audioFile}`);
         audio.volume = 0.5;
@@ -218,26 +261,28 @@ const AnalysisReport: React.FC<AnalysisReportProps> = ({
     }
   }, [verdictInfo.audioFile, audioPlayed]);
   
-  useEffect(() => {
-    async function fetchTokenAnalysis() {
-      if (address && network) {
-        setIsTokenAnalysisLoading(true);
-        try {
-          const securityData = await analyzeTokenSecurity(address, network);
-          setTokenSecurityData(securityData);
-        } catch (error) {
-          console.error("Error fetching token security analysis:", error);
-        } finally {
-          setIsTokenAnalysisLoading(false);
-        }
-      }
-    }
-    
-    fetchTokenAnalysis();
-  }, [address, network]);
+  // Copy address to clipboard
+  const copyAddressToClipboard = () => {
+    navigator.clipboard.writeText(address);
+    toast.success("Address copied to clipboard");
+  };
+  
+  if (isLoading) {
+    return (
+      <div className="w-full max-w-4xl mx-auto animate-pulse">
+        <div className="bg-muted/30 backdrop-blur-sm p-4 rounded-lg mb-6">
+          <div className="h-6 bg-muted rounded w-1/4 mb-2"></div>
+          <div className="h-4 bg-muted rounded w-1/2"></div>
+        </div>
+        <div className="h-64 bg-muted/20 rounded-lg mb-6"></div>
+        <div className="h-40 bg-muted/20 rounded-lg"></div>
+      </div>
+    );
+  }
   
   return (
     <div className="w-full max-w-4xl mx-auto animate-fade-in">
+      {/* Address and Network Info */}
       <div className="bg-muted/30 backdrop-blur-sm p-4 rounded-lg mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-3">
           <div>
@@ -245,17 +290,30 @@ const AnalysisReport: React.FC<AnalysisReportProps> = ({
               <LinkIcon className="h-4 w-4 text-primary" />
               <h3 className="font-medium">Address</h3>
             </div>
-            <p className="text-sm text-muted-foreground font-mono">{formattedAddress}</p>
+            <div className="flex items-center">
+              <p className="text-sm text-muted-foreground font-mono">{formattedAddress}</p>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-6 w-6 ml-1" 
+                onClick={copyAddressToClipboard}
+              >
+                <Copy className="h-3 w-3" />
+                <span className="sr-only">Copy address</span>
+              </Button>
+            </div>
           </div>
           
           <NetworkBadge network={network} />
         </div>
         
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Clock className="h-4 w-4" />
-            <span>Analyzed {timeAgo}</span>
-          </div>
+          {timeAgo && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Clock className="h-4 w-4" />
+              <span>Analyzed {timeAgo}</span>
+            </div>
+          )}
           
           <a 
             href={getExplorerUrl()} 
@@ -269,24 +327,12 @@ const AnalysisReport: React.FC<AnalysisReportProps> = ({
         </div>
       </div>
       
+      {/* Final Verdict Card */}
       <div className={`mb-6 rounded-lg border ${verdictInfo.color}`}>
         <div className="p-4">
           <div className="flex items-center gap-2 mb-2">
             {verdictInfo.icon}
             <h2 className="text-xl font-bold">Final Verdict: {verdictInfo.verdict}</h2>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="ml-auto"
-              onClick={() => {
-                const audio = new Audio(`/${verdictInfo.audioFile}`);
-                audio.volume = 0.5;
-                audio.play().catch(e => console.error(e));
-              }}
-            >
-              <Volume2 className="h-4 w-4" />
-              <span className="sr-only">Play sound</span>
-            </Button>
           </div>
           <p className="text-sm">{verdictInfo.description}</p>
           
@@ -310,150 +356,49 @@ const AnalysisReport: React.FC<AnalysisReportProps> = ({
         </div>
       </div>
       
-      {isTokenAnalysisLoading ? (
-        <div className="w-full p-8 flex items-center justify-center">
-          <div className="animate-pulse flex flex-col items-center">
-            <div className="h-10 w-64 bg-muted rounded mb-4"></div>
-            <div className="h-4 w-48 bg-muted rounded"></div>
-          </div>
-        </div>
-      ) : tokenSecurityData && (
+      {/* Token Analysis Section */}
+      {analysisData && analysisData.addressType === 'token' && (
         <TokenAnalysis 
           address={address}
           network={network}
-          tokenData={tokenSecurityData}
+          tokenData={analysisData.securityAnalysis}
+          tokenDetails={analysisData.tokenDetails}
+          aiScores={analysisData.aiAnalysis}
         />
       )}
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <ScoreCardWithInfo 
-          title="Trust Score" 
-          score={scores.trust_score}
-          type="trust"
-          description={scoreDescriptions.trust}
-          icon={<Shield className="h-6 w-6" />}
-        />
-        <ScoreCardWithInfo 
-          title="Developer Score" 
-          score={scores.developer_score}
-          type="developer"
-          description={scoreDescriptions.developer}
-        />
-        <ScoreCardWithInfo 
-          title="Liquidity Score" 
-          score={scores.liquidity_score}
-          type="liquidity"
-          description={scoreDescriptions.liquidity}
-          icon={<Droplet className="h-6 w-6" />}
-        />
-      </div>
-      
-      {(scores.community_score !== undefined || scores.holder_distribution !== undefined || 
-        scores.fraud_risk !== undefined || scores.social_sentiment !== undefined) && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {scores.community_score !== undefined && (
-            <ScoreCardWithInfo 
-              title="Community Score" 
-              score={scores.community_score}
-              type="community"
-              description={scoreDescriptions.community}
-              icon={<Users className="h-6 w-6" />}
-            />
-          )}
+      {/* AI Analysis */}
+      {sentences.length > 0 && (
+        <div className="glass-card rounded-xl p-6 mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <Sparkles className="h-5 w-5 text-primary" />
+            <h3 className="text-lg font-semibold">AI Analysis</h3>
+          </div>
           
-          {scores.holder_distribution !== undefined && (
-            <ScoreCardWithInfo 
-              title="Holder Distribution" 
-              score={scores.holder_distribution}
-              type="holders"
-              description={scoreDescriptions.holders}
-              icon={<BarChart2 className="h-6 w-6" />}
-            />
-          )}
-          
-          {scores.fraud_risk !== undefined && (
-            <ScoreCardWithInfo 
-              title="Fraud Risk" 
-              score={100 - scores.fraud_risk}
-              type="fraud"
-              description={scoreDescriptions.fraud}
-              icon={<AlertTriangle className="h-6 w-6" />}
-              invertScore={true}
-            />
-          )}
-          
-          {scores.social_sentiment !== undefined && (
-            <ScoreCardWithInfo 
-              title="Social Sentiment" 
-              score={scores.social_sentiment}
-              type="sentiment"
-              description={scoreDescriptions.sentiment}
-              icon={<MessageCircle className="h-6 w-6" />}
-            />
-          )}
+          <div className="space-y-3 text-muted-foreground">
+            {sentences.map((sentence, index) => (
+              <p key={index}>{sentence}.</p>
+            ))}
+          </div>
         </div>
       )}
       
-      <div className="glass-card rounded-xl p-6 mb-8">
-        <div className="flex items-center gap-2 mb-4">
-          <Sparkles className="h-5 w-5 text-primary" />
-          <h3 className="text-lg font-semibold">AI Analysis</h3>
+      {/* Categories & Tags */}
+      {analysisData?.aiAnalysis?.categories && analysisData.aiAnalysis.categories.length > 0 && (
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-3">
+            <Tag className="h-4 w-4 text-muted-foreground" />
+            <h3 className="text-sm font-medium text-muted-foreground">Categories</h3>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {analysisData.aiAnalysis.categories.map((category: string, index: number) => (
+              <Badge key={index} variant="secondary" className="text-xs">
+                {category}
+              </Badge>
+            ))}
+          </div>
         </div>
-        
-        <div className="space-y-3 text-muted-foreground">
-          {sentences.map((sentence, index) => (
-            <p key={index}>{sentence}.</p>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-interface ScoreCardWithInfoProps {
-  title: string;
-  score: number;
-  type: string;
-  description: string;
-  icon?: React.ReactNode;
-  invertScore?: boolean;
-}
-
-const ScoreCardWithInfo: React.FC<ScoreCardWithInfoProps> = ({ 
-  title, 
-  score, 
-  type, 
-  description,
-  icon,
-  invertScore = false
-}) => {
-  const scoreType = type as 'trust' | 'developer' | 'liquidity';
-  
-  return (
-    <div className="relative">
-      <ScoreCard
-        title={title}
-        score={score}
-        type={type as any}
-      />
-      <div className="absolute top-2 right-2">
-        <HoverCard>
-          <HoverCardTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full">
-              <Info className="h-3 w-3" />
-              <span className="sr-only">Info</span>
-            </Button>
-          </HoverCardTrigger>
-          <HoverCardContent className="w-80">
-            <p className="text-sm">{description}</p>
-            {invertScore && (
-              <p className="text-xs text-muted-foreground mt-1">
-                Note: For this metric, higher scores indicate lower risk.
-              </p>
-            )}
-          </HoverCardContent>
-        </HoverCard>
-      </div>
+      )}
     </div>
   );
 };
