@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   AlertTriangle,
@@ -118,7 +117,6 @@ const TokenAnalysis: React.FC<TokenAnalysisProps> = ({
     devActivity
   } = tokenData;
 
-  // Helper function to render safety badge
   const renderSafetyBadge = (level: string) => {
     switch (level) {
       case 'Safe':
@@ -147,7 +145,6 @@ const TokenAnalysis: React.FC<TokenAnalysisProps> = ({
     }
   };
 
-  // Helper function to render status badges
   const renderStatus = (passed: boolean, label?: string) => {
     if (passed) {
       return (
@@ -165,7 +162,6 @@ const TokenAnalysis: React.FC<TokenAnalysisProps> = ({
     );
   };
 
-  // Helper function to render warning status
   const renderWarning = (label: string) => {
     return (
       <Badge variant="outline" className="border-amber-500 bg-amber-500/10 text-amber-500">
@@ -175,7 +171,6 @@ const TokenAnalysis: React.FC<TokenAnalysisProps> = ({
     );
   };
 
-  // Helper function to render risk level
   const renderRiskLevel = (risk: string) => {
     switch (risk) {
       case 'High':
@@ -283,7 +278,6 @@ const TokenAnalysis: React.FC<TokenAnalysisProps> = ({
       </Card>
 
       <Accordion type="multiple" className="w-full">
-        {/* Honeypot Check */}
         <AccordionItem value="honeypot" className="glass-card border-muted rounded-xl overflow-hidden mb-4">
           <AccordionTrigger className="px-4 py-3 hover:no-underline">
             <div className="flex items-center gap-2">
@@ -329,7 +323,6 @@ const TokenAnalysis: React.FC<TokenAnalysisProps> = ({
           </AccordionContent>
         </AccordionItem>
 
-        {/* Liquidity Pool Info */}
         <AccordionItem value="liquidity" className="glass-card border-muted rounded-xl overflow-hidden mb-4">
           <AccordionTrigger className="px-4 py-3 hover:no-underline">
             <div className="flex items-center gap-2">
@@ -380,7 +373,6 @@ const TokenAnalysis: React.FC<TokenAnalysisProps> = ({
           </AccordionContent>
         </AccordionItem>
 
-        {/* Contract Ownership */}
         <AccordionItem value="ownership" className="glass-card border-muted rounded-xl overflow-hidden mb-4">
           <AccordionTrigger className="px-4 py-3 hover:no-underline">
             <div className="flex items-center gap-2">
@@ -432,7 +424,6 @@ const TokenAnalysis: React.FC<TokenAnalysisProps> = ({
           </AccordionContent>
         </AccordionItem>
 
-        {/* Dangerous Functions */}
         <AccordionItem value="functions" className="glass-card border-muted rounded-xl overflow-hidden mb-4">
           <AccordionTrigger className="px-4 py-3 hover:no-underline">
             <div className="flex items-center gap-2">
@@ -481,7 +472,6 @@ const TokenAnalysis: React.FC<TokenAnalysisProps> = ({
           </AccordionContent>
         </AccordionItem>
 
-        {/* Transaction Fees */}
         <AccordionItem value="fees" className="glass-card border-muted rounded-xl overflow-hidden mb-4">
           <AccordionTrigger className="px-4 py-3 hover:no-underline">
             <div className="flex items-center gap-2">
@@ -523,7 +513,6 @@ const TokenAnalysis: React.FC<TokenAnalysisProps> = ({
           </AccordionContent>
         </AccordionItem>
 
-        {/* Token Distribution */}
         <AccordionItem value="distribution" className="glass-card border-muted rounded-xl overflow-hidden mb-4">
           <AccordionTrigger className="px-4 py-3 hover:no-underline">
             <div className="flex items-center gap-2">
@@ -588,7 +577,6 @@ const TokenAnalysis: React.FC<TokenAnalysisProps> = ({
           </AccordionContent>
         </AccordionItem>
 
-        {/* Social & Dev Activity */}
         <AccordionItem value="social" className="glass-card border-muted rounded-xl overflow-hidden mb-4">
           <AccordionTrigger className="px-4 py-3 hover:no-underline">
             <div className="flex items-center gap-2">
