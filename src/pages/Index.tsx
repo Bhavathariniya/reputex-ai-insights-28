@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import AddressInput from '@/components/AddressInput';
+import LandingPage from '@/components/LandingPage';
 import LoadingAnimation from '@/components/LoadingAnimation';
 import AnalysisReport from '@/components/AnalysisReport';
+import AnalysisDashboard from '@/components/AnalysisDashboard';
 import { toast } from 'sonner';
-import { Volume2, VolumeX, Shield } from 'lucide-react';
+import { Volume2, VolumeX } from 'lucide-react';
 import { isContract, detectBlockchain } from '@/lib/chain-detection';
 import { getAggregatedAnalysis } from '@/lib/blockchain-api';
 
@@ -18,18 +19,22 @@ const Index = () => {
   const [audioEnabled, setAudioEnabled] = useState<boolean>(false);
   const [addressType, setAddressType] = useState<'token' | 'wallet' | null>(null);
   const [isAutoDetecting, setIsAutoDetecting] = useState<boolean>(false);
+  const [showDashboard, setShowDashboard] = useState<boolean>(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const analyzeRef = useRef<HTMLDivElement>(null);
 
   // Check for address in URL query params
   useEffect(() => {
     const query = new URLSearchParams(location.search);
     const addressParam = query.get('address');
     const networkParam = query.get('network') || 'ethereum';
+    const viewParam = query.get('view') || 'report';
     
     if (addressParam) {
       setSearchedAddress(addressParam);
       setSearchedNetwork(networkParam);
+      setShowDashboard(viewParam === 'dashboard');
       handleAddressSearch(addressParam, networkParam);
     }
   }, [location]);
@@ -77,6 +82,11 @@ const Index = () => {
       setAnalysis(aggregatedData);
       
       toast.success(`Analysis complete for ${resolvedNetwork} ${aggregatedData.addressType}`);
+      
+      // Scroll to the analysis section
+      setTimeout(() => {
+        analyzeRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 500);
     } catch (error) {
       console.error('Error in analysis process:', error);
       toast.error('Analysis failed. Please try again.');
@@ -89,7 +99,22 @@ const Index = () => {
     setSearchedAddress(address);
     setSearchedNetwork(network);
     // Update URL with the address and network parameters
-    navigate(`/?address=${address}&network=${network}`);
+    navigate(`/?address=${address}&network=${network}&view=${showDashboard ? 'dashboard' : 'report'}`);
+  };
+
+  const toggleView = () => {
+    setShowDashboard(!showDashboard);
+    if (searchedAddress) {
+      navigate(`/?address=${searchedAddress}&network=${searchedNetwork}&view=${!showDashboard ? 'dashboard' : 'report'}`);
+    }
+  };
+
+  const handleNetworkChange = (network: string) => {
+    setSearchedNetwork(network);
+    if (searchedAddress) {
+      navigate(`/?address=${searchedAddress}&network=${network}&view=${showDashboard ? 'dashboard' : 'report'}`);
+      handleAddressSearch(searchedAddress, network);
+    }
   };
 
   const toggleAudio = () => {
@@ -128,44 +153,38 @@ const Index = () => {
         )}
       </div>
       
-      <main className="flex-grow pt-32 pb-16 px-4 container mx-auto relative z-10">
-        <section className="mb-12 text-center">
-          <div className="shield-logo mx-auto mb-6 w-20 h-20 flex items-center justify-center">
-            <Shield className="w-16 h-16 text-neon-cyan" />
-          </div>
-          
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 animate-float">
-            <span className="neon-text">ReputeX AI</span>
-          </h1>
-          
-          <p className="tagline max-w-2xl mx-auto">
-            Web3's Multi-Chain AI-Powered Reputation Shield – Detect Scams & Invest Fearlessly Across All Major Blockchains.
-          </p>
-          
-          <AddressInput onSubmit={handleSubmit} isLoading={isLoading || isAutoDetecting} />
-        </section>
+      <main className="flex-grow pt-16 pb-16 relative z-10">
+        {/* No analysis yet - show landing page */}
+        {!analysis && !isLoading && !isAutoDetecting && (
+          <LandingPage onAddressSubmit={handleSubmit} />
+        )}
         
-        <section className="container mx-auto">
-          {(isLoading || isAutoDetecting) && <LoadingAnimation />}
-          
+        {/* Loading state */}
+        {(isLoading || isAutoDetecting) && (
+          <div className="container mx-auto px-4 py-20 text-center">
+            <LoadingAnimation />
+          </div>
+        )}
+        
+        {/* Analysis result */}
+        <div ref={analyzeRef}>
           {!isLoading && !isAutoDetecting && analysis && searchedAddress && (
-            <AnalysisReport
-              address={searchedAddress}
-              network={searchedNetwork || 'ethereum'}
-            />
+            <>
+              {showDashboard ? (
+                <AnalysisDashboard 
+                  address={searchedAddress}
+                  network={searchedNetwork} 
+                  onNetworkChange={handleNetworkChange}
+                />
+              ) : (
+                <AnalysisReport
+                  address={searchedAddress}
+                  network={searchedNetwork || 'ethereum'}
+                />
+              )}
+            </>
           )}
-          
-          {!isLoading && !isAutoDetecting && !analysis && (
-            <div className="max-w-4xl mx-auto mt-10">
-              <div className="glowing-card rounded-xl p-8 text-center">
-                <h3 className="text-2xl font-semibold mb-4">Enter an address to analyze</h3>
-                <p className="text-muted-foreground">
-                  Get comprehensive reputation scores, security analysis, and AI fraud detection for any blockchain wallet or token address across 12 major blockchains.
-                </p>
-              </div>
-            </div>
-          )}
-        </section>
+        </div>
       </main>
       
       <Footer />
