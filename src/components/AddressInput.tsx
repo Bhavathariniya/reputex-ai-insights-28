@@ -8,18 +8,18 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 const BLOCKCHAINS = [
-  { id: 'bitcoin', name: 'Bitcoin', logo: '/assets/logos/bitcoin.svg' },
-  { id: 'l1x', name: 'L1X', logo: '/assets/logos/l1x.svg' },
-  { id: 'ethereum', name: 'Ethereum', logo: '/assets/logos/ethereum.svg' },
-  { id: 'binance', name: 'BNB Chain', logo: '/assets/logos/bnb.svg' },
-  { id: 'polygon', name: 'Polygon', logo: '/assets/logos/polygon.svg' },
-  { id: 'arbitrum', name: 'Arbitrum', logo: '/assets/logos/arbitrum.svg' },
-  { id: 'optimism', name: 'Optimism', logo: '/assets/logos/optimism.svg' },
-  { id: 'solana', name: 'Solana', logo: '/assets/logos/solana.svg' },
-  { id: 'avalanche', name: 'Avalanche', logo: '/assets/logos/avalanche.svg' },
-  { id: 'fantom', name: 'Fantom', logo: '/assets/logos/fantom.svg' },
-  { id: 'base', name: 'Base', logo: '/assets/logos/base.svg' },
-  { id: 'zksync', name: 'zkSync', logo: '/assets/logos/zksync.svg' },
+  { id: 'bitcoin', name: 'Bitcoin', logo: '/src/assets/logos/bitcoin.png' },
+  { id: 'l1x', name: 'L1X', logo: '/src/assets/logos/l1x.png' },
+  { id: 'ethereum', name: 'Ethereum', logo: '/src/assets/logos/ethereum.png' },
+  { id: 'binance', name: 'BNB Chain', logo: '/src/assets/logos/bnb-chain.svg' },
+  { id: 'polygon', name: 'Polygon', logo: '/src/assets/logos/polygon.svg' },
+  { id: 'arbitrum', name: 'Arbitrum', logo: '/src/assets/logos/arbitrum.svg' },
+  { id: 'optimism', name: 'Optimism', logo: '/src/assets/logos/optimism.svg' },
+  { id: 'solana', name: 'Solana', logo: '/src/assets/logos/solana.svg' },
+  { id: 'avalanche', name: 'Avalanche', logo: '/src/assets/logos/avalanche.png' },
+  { id: 'fantom', name: 'Fantom', logo: '/src/assets/logos/fantom.svg' },
+  { id: 'base', name: 'Base', logo: '/src/assets/logos/base.svg' },
+  { id: 'zksync', name: 'zkSync', logo: '/src/assets/logos/zksync.png' },
 ];
 
 interface AddressInputProps {
