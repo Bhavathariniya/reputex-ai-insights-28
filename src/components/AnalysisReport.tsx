@@ -516,9 +516,11 @@ const AnalysisReport: React.FC<AnalysisReportProps> = ({
                   <span className="text-md font-bold text-white/90">{tokenData.tokenSymbol}</span>
                 </div>
                 <p className="text-sm mt-2 text-white/70">
-                  Supply: {typeof tokenData.totalSupply === 'string' ? 
-                    parseFloat(tokenData.totalSupply).toLocaleString() : 
-                    tokenData.totalSupply.toLocaleString()}
+                  Supply: {
+                    typeof tokenData.totalSupply === 'string' && !isNaN(parseFloat(tokenData.totalSupply)) ? 
+                      parseFloat(tokenData.totalSupply).toLocaleString() : 
+                      tokenData.totalSupply
+                  }
                 </p>
               </div>
             </div>
