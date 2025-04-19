@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import ScoreCard from '@/components/ScoreCard';
 import TokenAnalysis from '@/components/TokenAnalysis';
@@ -7,6 +8,7 @@ import {
   Link as LinkIcon, 
   ExternalLink,
   Shield,
+  ShieldAlert,
   Droplet,
   Users,
   BarChart2,
@@ -18,7 +20,12 @@ import {
   MessageCircle,
   Tag,
   LockIcon,
-  UnlockIcon
+  UnlockIcon,
+  Flame,
+  BadgeCheck,
+  BadgeX,
+  PieChart,
+  Gauge
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
@@ -26,6 +33,22 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { analyzeTokenSecurity } from '@/lib/chain-detection';
+import {
+  BitcoinIcon,
+  L1XIcon,
+  EthereumIcon,
+  BNBChainIcon,
+  PolygonIcon,
+  ArbitrumIcon,
+  OptimismIcon,
+  SolanaIcon,
+  AvalancheIcon,
+  FantomIcon,
+  BaseIcon,
+  ZkSyncIcon,
+} from '@/components/icons';
+import { Progress } from '@/components/ui/progress';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface TokenData {
   tokenName: string;
@@ -71,19 +94,22 @@ interface AnalysisReportProps {
 }
 
 const NetworkBadge = ({ network }: { network: string }) => {
-  const networkColors: Record<string, string> = {
-    bitcoin: 'border-[#F7931A] bg-[#F7931A]/10 text-[#F7931A]',
-    l1x: 'border-[#3D52F4] bg-[#3D52F4]/10 text-[#3D52F4]',
-    ethereum: 'border-[#627EEA] bg-[#627EEA]/10 text-[#627EEA]',
-    binance: 'border-[#F3BA2F] bg-[#F3BA2F]/10 text-[#F3BA2F]',
-    polygon: 'border-[#8247E5] bg-[#8247E5]/10 text-[#8247E5]',
-    arbitrum: 'border-[#28A0F0] bg-[#28A0F0]/10 text-[#28A0F0]',
-    optimism: 'border-[#FF0420] bg-[#FF0420]/10 text-[#FF0420]',
-    solana: 'border-[#14F195] bg-[#14F195]/10 text-[#14F195]',
-    avalanche: 'border-[#E84142] bg-[#E84142]/10 text-[#E84142]',
-    fantom: 'border-[#1969FF] bg-[#1969FF]/10 text-[#1969FF]',
-    base: 'border-[#0052FF] bg-[#0052FF]/10 text-[#0052FF]',
-    zksync: 'border-[#8C8DFC] bg-[#8C8DFC]/10 text-[#8C8DFC]',
+  const getNetworkIcon = (network: string) => {
+    switch (network.toLowerCase()) {
+      case 'bitcoin': return <BitcoinIcon className="h-5 w-5 mr-2" />;
+      case 'l1x': return <L1XIcon className="h-5 w-5 mr-2" />;
+      case 'ethereum': return <EthereumIcon className="h-5 w-5 mr-2" />;
+      case 'binance': return <BNBChainIcon className="h-5 w-5 mr-2" />;
+      case 'polygon': return <PolygonIcon className="h-5 w-5 mr-2" />;
+      case 'arbitrum': return <ArbitrumIcon className="h-5 w-5 mr-2" />;
+      case 'optimism': return <OptimismIcon className="h-5 w-5 mr-2" />;
+      case 'solana': return <SolanaIcon className="h-5 w-5 mr-2" />;
+      case 'avalanche': return <AvalancheIcon className="h-5 w-5 mr-2" />;
+      case 'fantom': return <FantomIcon className="h-5 w-5 mr-2" />;
+      case 'base': return <BaseIcon className="h-5 w-5 mr-2" />;
+      case 'zksync': return <ZkSyncIcon className="h-5 w-5 mr-2" />;
+      default: return <LinkIcon className="h-5 w-5 mr-2" />;
+    }
   };
 
   const networkNames: Record<string, string> = {
@@ -102,11 +128,9 @@ const NetworkBadge = ({ network }: { network: string }) => {
   };
 
   return (
-    <Badge
-      variant="outline"
-      className={networkColors[network] || 'border-muted-foreground text-muted-foreground'}
-    >
-      {networkNames[network] || network}
+    <Badge variant="outline" className="flex items-center bg-background/60 backdrop-blur-sm">
+      {getNetworkIcon(network)}
+      {networkNames[network.toLowerCase()] || network}
     </Badge>
   );
 };
@@ -115,59 +139,90 @@ const TokenInfoCard = ({ tokenData }: { tokenData: TokenData }) => {
   if (!tokenData) return null;
   
   return (
-    <div className="bg-card/50 backdrop-blur-sm rounded-lg p-6 mb-6">
-      <h3 className="text-xl font-bold mb-4 flex items-center">
-        <Tag className="h-5 w-5 mr-2 text-primary" />
-        Token Information
-      </h3>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <div>
-            <span className="text-sm text-muted-foreground">Name:</span>
-            <p className="font-medium">{tokenData.tokenName}</p>
+    <Card className="mb-6 backdrop-blur-sm border-none shadow-md">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-xl flex items-center">
+          <Tag className="h-5 w-5 mr-2" />
+          Token Information
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <div>
+              <span className="text-sm text-muted-foreground">Name:</span>
+              <p className="font-medium">{tokenData.tokenName}</p>
+            </div>
+            
+            <div>
+              <span className="text-sm text-muted-foreground">Symbol:</span>
+              <p className="font-medium">{tokenData.tokenSymbol}</p>
+            </div>
+            
+            <div>
+              <span className="text-sm text-muted-foreground">Total Supply:</span>
+              <p className="font-medium">{tokenData.totalSupply}</p>
+            </div>
           </div>
           
-          <div>
-            <span className="text-sm text-muted-foreground">Symbol:</span>
-            <p className="font-medium">{tokenData.tokenSymbol}</p>
-          </div>
-          
-          <div>
-            <span className="text-sm text-muted-foreground">Total Supply:</span>
-            <p className="font-medium">{tokenData.totalSupply}</p>
+          <div className="space-y-2">
+            <div>
+              <span className="text-sm text-muted-foreground">Holders:</span>
+              <p className="font-medium">{tokenData.holderCount || 'Unknown'}</p>
+            </div>
+            
+            <div>
+              <span className="text-sm text-muted-foreground">Decimals:</span>
+              <p className="font-medium">{tokenData.decimals}</p>
+            </div>
+            
+            <div>
+              <span className="text-sm text-muted-foreground">Liquidity:</span>
+              <p className="font-medium flex items-center">
+                {tokenData.isLiquidityLocked ? (
+                  <>
+                    <LockIcon className="h-4 w-4 mr-1 text-green-500" />
+                    <span className="text-green-500">Locked</span>
+                  </>
+                ) : (
+                  <>
+                    <UnlockIcon className="h-4 w-4 mr-1 text-yellow-500" />
+                    <span className="text-yellow-500">Not Verified</span>
+                  </>
+                )}
+              </p>
+            </div>
           </div>
         </div>
-        
-        <div className="space-y-2">
-          <div>
-            <span className="text-sm text-muted-foreground">Holders:</span>
-            <p className="font-medium">{tokenData.holderCount || 'Unknown'}</p>
-          </div>
-          
-          <div>
-            <span className="text-sm text-muted-foreground">Decimals:</span>
-            <p className="font-medium">{tokenData.decimals}</p>
-          </div>
-          
-          <div>
-            <span className="text-sm text-muted-foreground">Liquidity:</span>
-            <p className="font-medium flex items-center">
-              {tokenData.isLiquidityLocked ? (
-                <>
-                  <LockIcon className="h-4 w-4 mr-1 text-green-500" />
-                  <span className="text-green-500">Locked</span>
-                </>
-              ) : (
-                <>
-                  <UnlockIcon className="h-4 w-4 mr-1 text-yellow-500" />
-                  <span className="text-yellow-500">Not Verified</span>
-                </>
-              )}
-            </p>
-          </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+const VisualScoreCard = ({ title, score, icon, invertScore = false, colorClass = "" }: { 
+  title: string;
+  score: number;
+  icon: React.ReactNode;
+  invertScore?: boolean;
+  colorClass?: string;
+}) => {
+  const actualScore = invertScore ? 100 - score : score;
+  const scoreColor = actualScore > 70 
+    ? "text-green-500" 
+    : actualScore > 40 
+      ? "text-yellow-500" 
+      : "text-red-500";
+  
+  return (
+    <div className={`p-4 rounded-lg ${colorClass || "bg-card/60"} backdrop-blur-sm border shadow-sm transition-all hover:shadow-md`}>
+      <div className="flex justify-between items-center mb-2">
+        <div className="flex items-center">
+          {icon}
+          <h3 className="font-medium ml-2">{title}</h3>
         </div>
+        <span className={`text-2xl font-bold ${scoreColor}`}>{actualScore}</span>
       </div>
+      <Progress value={actualScore} className="h-2" />
     </div>
   );
 };
@@ -206,18 +261,7 @@ const AnalysisReport: React.FC<AnalysisReportProps> = ({
       zksync: 'https://explorer.zksync.io/address/',
     };
     
-    return (explorers[network] || explorers.ethereum) + address;
-  };
-  
-  const scoreDescriptions = {
-    trust: "Overall trust level based on transaction history, contract verification, and behavior patterns",
-    developer: "Assessment of code quality, development activity, and technical implementation",
-    liquidity: "Market depth, trading volume reliability, and token accessibility",
-    community: "Evaluation of community size, engagement levels, and sentiment analysis",
-    holders: "Analysis of token distribution across different wallet types and concentration patterns",
-    fraud: "Probability assessment of fraudulent activity or scam indicators",
-    sentiment: "Real-time analysis of social media sentiment across platforms",
-    confidence: "Confidence level in the overall assessment based on data quality and completeness"
+    return (explorers[network.toLowerCase()] || explorers.ethereum) + address;
   };
   
   const calculateVerdict = () => {
@@ -240,38 +284,50 @@ const AnalysisReport: React.FC<AnalysisReportProps> = ({
     
     if (fraudRisk > 80 || scoresBelow50 > totalScores / 2 || scamIndicators?.length > 2) {
       return {
-        verdict: "High Risk – Caution Advised",
-        icon: <XCircle className="h-6 w-6 text-neon-red" />,
-        color: "destructive",
-        description: `Multiple critical issues detected. Exercise extreme caution. ${confidenceScore}% confidence in this assessment.`,
-        audioFile: "play_danger.mp3"
+        verdict: "High Risk",
+        icon: <Flame className="h-10 w-10 text-red-500 animate-pulse" />,
+        description: "Multiple critical issues detected",
+        bannerText: "DANGER ZONE",
+        colorClass: "bg-gradient-to-r from-red-900/80 to-red-600/80",
+        textColorClass: "text-red-50",
+        audioFile: "play_danger.mp3",
+        bgClass: "bg-gradient-to-br from-red-900 to-red-600 text-white"
       };
     }
     else if (fraudRisk > 60 || scoresBelow50 > 0 || scamIndicators?.length > 0) {
       return {
         verdict: "Likely Risky",
-        icon: <AlertTriangle className="h-6 w-6 text-neon-orange" />,
-        color: "border-neon-orange bg-[#FF8630]/10 text-neon-orange",
-        description: `Some concerning indicators present. Proceed with caution. ${confidenceScore}% confidence in this assessment.`,
-        audioFile: "play_risky.mp3"
+        icon: <AlertTriangle className="h-10 w-10 text-orange-500 animate-pulse" />,
+        description: "Some concerning indicators present",
+        bannerText: "CAUTION ZONE",
+        colorClass: "bg-gradient-to-r from-orange-800/80 to-orange-500/80",
+        textColorClass: "text-orange-50",
+        audioFile: "play_risky.mp3",
+        bgClass: "bg-gradient-to-br from-orange-800 to-orange-500 text-white"
       };
     }
     else if (scoresAbove80 > totalScores / 2) {
       return {
         verdict: "Highly Legit",
-        icon: <CheckCircle className="h-6 w-6 text-neon-cyan" />,
-        color: "border-neon-cyan bg-[#00E5F3]/10 text-neon-cyan",
-        description: `Strong metrics across all major indicators. ${confidenceScore}% confidence in this assessment.`,
-        audioFile: "play_legit.mp3"
+        icon: <Shield className="h-10 w-10 text-emerald-500 animate-pulse" />,
+        description: "Strong metrics across all major indicators",
+        bannerText: "SAFE ZONE",
+        colorClass: "bg-gradient-to-r from-emerald-800/80 to-emerald-500/80",
+        textColorClass: "text-emerald-50",
+        audioFile: "play_legit.mp3",
+        bgClass: "bg-gradient-to-br from-emerald-800 to-emerald-500 text-white"
       };
     }
     else {
       return {
         verdict: "Likely Legit",
-        icon: <CheckCircle className="h-6 w-6 text-neon-pink" />,
-        color: "border-neon-pink bg-[#E31366]/10 text-neon-pink",
-        description: `Analysis indicates favorable metrics across major indicators. ${confidenceScore}% confidence in this assessment.`,
-        audioFile: "play_legit.mp3"
+        icon: <CheckCircle className="h-10 w-10 text-cyan-500 animate-pulse" />,
+        description: "Analysis indicates favorable metrics",
+        bannerText: "PROBABLY SAFE",
+        colorClass: "bg-gradient-to-r from-cyan-800/80 to-cyan-500/80",
+        textColorClass: "text-cyan-50",
+        audioFile: "play_legit.mp3",
+        bgClass: "bg-gradient-to-br from-cyan-800 to-cyan-500 text-white"
       };
     }
   };
@@ -311,178 +367,327 @@ const AnalysisReport: React.FC<AnalysisReportProps> = ({
     fetchTokenAnalysis();
   }, [address, network]);
   
+  // Determine if this is a danger or safe report
+  const isDanger = verdictInfo.verdict.includes("Risk");
+  
   return (
-    <div className="w-full max-w-4xl mx-auto animate-fade-in">
-      <div className="bg-muted/30 backdrop-blur-sm p-4 rounded-lg mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-3">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <LinkIcon className="h-4 w-4 text-primary" />
-              <h3 className="font-medium">Address</h3>
+    <div className={`${verdictInfo.bgClass} min-h-screen transition-colors duration-500 animate-fade-in`}>
+      <div className="w-full max-w-4xl mx-auto px-4 py-6">
+        {/* Header with Address and Network */}
+        <div className="bg-white/10 backdrop-blur-md p-4 rounded-xl mb-6 shadow-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex items-center gap-3">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <LinkIcon className="h-4 w-4" />
+                <h3 className="font-medium text-white/90">Contract</h3>
+              </div>
+              <p className="text-sm text-white/70 font-mono">{formattedAddress}</p>
             </div>
-            <p className="text-sm text-muted-foreground font-mono">{formattedAddress}</p>
+            
+            <NetworkBadge network={network} />
           </div>
           
-          <NetworkBadge network={network} />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <div className="flex items-center gap-2 text-sm text-white/70">
+              <Clock className="h-4 w-4" />
+              <span>Analyzed {timeAgo}</span>
+            </div>
+            
+            <a 
+              href={getExplorerUrl()} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-white/90 text-sm transition-colors"
+            >
+              <ExternalLink className="h-3 w-3" />
+              Explorer
+            </a>
+          </div>
         </div>
         
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Clock className="h-4 w-4" />
-            <span>Analyzed {timeAgo}</span>
+        {/* Main Verdict Banner */}
+        <div className={`mb-8 rounded-xl overflow-hidden ${verdictInfo.colorClass} shadow-lg animate-scale-in`}>
+          <div className="p-6 flex flex-col items-center text-center">
+            <div className="mb-4 transform hover:scale-110 transition-transform">
+              {verdictInfo.icon}
+            </div>
+            <h2 className={`text-3xl font-bold mb-2 ${verdictInfo.textColorClass}`}>
+              {verdictInfo.bannerText}
+            </h2>
+            <div className="flex items-center mb-4">
+              <h3 className={`text-xl font-semibold ${verdictInfo.textColorClass}`}>
+                {verdictInfo.verdict}
+              </h3>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="ml-2"
+                onClick={() => {
+                  const audio = new Audio(`/${verdictInfo.audioFile}`);
+                  audio.volume = 0.5;
+                  audio.play().catch(e => console.error(e));
+                }}
+              >
+                <Volume2 className="h-4 w-4 text-white/90" />
+                <span className="sr-only">Play sound</span>
+              </Button>
+            </div>
+            <p className={`text-lg ${verdictInfo.textColorClass}`}>
+              {verdictInfo.description}
+            </p>
+            
+            {scamIndicators && scamIndicators.length > 0 && (
+              <div className="mt-6 flex flex-wrap justify-center gap-2">
+                {scamIndicators.map((indicator, index) => (
+                  <HoverCard key={index}>
+                    <HoverCardTrigger asChild>
+                      <Badge variant="outline" className="border-red-300 bg-red-900/50 text-white cursor-help">
+                        <AlertTriangle className="h-3 w-3 mr-1" />
+                        {indicator.label}
+                      </Badge>
+                    </HoverCardTrigger>
+                    <HoverCardContent className="w-80">
+                      <p className="text-sm">{indicator.description}</p>
+                    </HoverCardContent>
+                  </HoverCard>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* Key Security Indicators */}
+        {tokenData && (
+          <div className="mb-8">
+            <h3 className="text-xl font-bold mb-4 text-white/90 flex items-center">
+              <ShieldAlert className="h-5 w-5 mr-2" />
+              Key Security Indicators
+            </h3>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className={`p-4 rounded-lg backdrop-blur-sm shadow-md ${isDanger ? 'bg-red-900/40' : 'bg-emerald-900/40'}`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    {tokenData.isLiquidityLocked ? (
+                      <LockIcon className="h-6 w-6 text-emerald-400" />
+                    ) : (
+                      <UnlockIcon className="h-6 w-6 text-red-400" />
+                    )}
+                    <h4 className="font-medium ml-2 text-white/90">Liquidity</h4>
+                  </div>
+                  {tokenData.isLiquidityLocked ? (
+                    <BadgeCheck className="h-5 w-5 text-emerald-400" />
+                  ) : (
+                    <BadgeX className="h-5 w-5 text-red-400" />
+                  )}
+                </div>
+                <p className="text-sm mt-2 text-white/70">
+                  {tokenData.isLiquidityLocked ? 
+                    "Liquidity locked - reduced rug risk" : 
+                    "No verified liquidity lock"
+                  }
+                </p>
+              </div>
+              
+              <div className={`p-4 rounded-lg backdrop-blur-sm shadow-md ${isDanger ? 'bg-red-900/40' : 'bg-emerald-900/40'}`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Users className="h-6 w-6 text-white/90" />
+                    <h4 className="font-medium ml-2 text-white/90">Holders</h4>
+                  </div>
+                  <span className="text-lg font-bold text-white/90">{tokenData.holderCount}</span>
+                </div>
+                <p className="text-sm mt-2 text-white/70">
+                  {tokenData.holderCount > 1000 ? 
+                    "Wide distribution" : 
+                    tokenData.holderCount > 100 ?
+                    "Moderate distribution" :
+                    "Concentrated holders"
+                  }
+                </p>
+              </div>
+              
+              <div className={`p-4 rounded-lg backdrop-blur-sm shadow-md ${isDanger ? 'bg-red-900/40' : 'bg-emerald-900/40'}`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Tag className="h-6 w-6 text-white/90" />
+                    <h4 className="font-medium ml-2 text-white/90">Token</h4>
+                  </div>
+                  <span className="text-md font-bold text-white/90">{tokenData.tokenSymbol}</span>
+                </div>
+                <p className="text-sm mt-2 text-white/70">
+                  Supply: {typeof tokenData.totalSupply === 'string' ? 
+                    parseFloat(tokenData.totalSupply).toLocaleString() : 
+                    tokenData.totalSupply.toLocaleString()}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+  
+        {/* Score Cards - Visual Representation */}
+        <div className="mb-8">
+          <h3 className="text-xl font-bold mb-4 text-white/90 flex items-center">
+            <Gauge className="h-5 w-5 mr-2" />
+            Security Metrics
+          </h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <VisualScoreCard 
+              title="Trust Score" 
+              score={scores.trust_score}
+              icon={<Shield className="h-5 w-5 text-white/90" />}
+              colorClass={isDanger ? "bg-red-900/40" : "bg-emerald-900/40"}
+            />
+            
+            <VisualScoreCard 
+              title="Developer" 
+              score={scores.developer_score}
+              icon={<Code className="h-5 w-5 text-white/90" />}
+              colorClass={isDanger ? "bg-red-900/40" : "bg-emerald-900/40"}
+            />
+            
+            <VisualScoreCard 
+              title="Liquidity" 
+              score={scores.liquidity_score}
+              icon={<Droplet className="h-5 w-5 text-white/90" />}
+              colorClass={isDanger ? "bg-red-900/40" : "bg-emerald-900/40"}
+            />
+          </div>
+        </div>
+        
+        {/* Additional Score Cards - If Available */}
+        {(scores.community_score !== undefined || scores.holder_distribution !== undefined || 
+          scores.fraud_risk !== undefined || scores.social_sentiment !== undefined) && (
+          <div className="mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {scores.community_score !== undefined && (
+                <VisualScoreCard 
+                  title="Community" 
+                  score={scores.community_score}
+                  icon={<Users className="h-5 w-5 text-white/90" />}
+                  colorClass={isDanger ? "bg-red-900/40" : "bg-emerald-900/40"}
+                />
+              )}
+              
+              {scores.holder_distribution !== undefined && (
+                <VisualScoreCard 
+                  title="Distribution" 
+                  score={scores.holder_distribution}
+                  icon={<PieChart className="h-5 w-5 text-white/90" />}
+                  colorClass={isDanger ? "bg-red-900/40" : "bg-emerald-900/40"}
+                />
+              )}
+              
+              {scores.fraud_risk !== undefined && (
+                <VisualScoreCard 
+                  title="Safety Level" 
+                  score={scores.fraud_risk}
+                  icon={<AlertTriangle className="h-5 w-5 text-white/90" />}
+                  invertScore={true}
+                  colorClass={isDanger ? "bg-red-900/40" : "bg-emerald-900/40"}
+                />
+              )}
+              
+              {scores.social_sentiment !== undefined && (
+                <VisualScoreCard 
+                  title="Sentiment" 
+                  score={scores.social_sentiment}
+                  icon={<MessageCircle className="h-5 w-5 text-white/90" />}
+                  colorClass={isDanger ? "bg-red-900/40" : "bg-emerald-900/40"}
+                />
+              )}
+            </div>
+          </div>
+        )}
+        
+        {/* Additional Analysis - Token Security */}
+        {!isTokenAnalysisLoading && tokenSecurityData && tokenSecurityData.supported && (
+          <div className="mb-8">
+            <h3 className="text-xl font-bold mb-4 text-white/90 flex items-center">
+              <ShieldAlert className="h-5 w-5 mr-2" />
+              Contract Security
+            </h3>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              <div className={`p-4 rounded-lg backdrop-blur-sm shadow-md ${isDanger ? 'bg-red-900/40' : 'bg-emerald-900/40'}`}>
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium text-white/90">Honeypot Risk</h4>
+                  <Badge className={tokenSecurityData.honeypotRisk === "Low" ? 
+                    "bg-emerald-600" : tokenSecurityData.honeypotRisk === "Medium" ? 
+                    "bg-amber-600" : "bg-red-600"}>
+                    {tokenSecurityData.honeypotRisk}
+                  </Badge>
+                </div>
+                <p className="text-sm mt-2 text-white/70">
+                  {tokenSecurityData.isSellable ? 
+                    "Can sell tokens freely" : 
+                    "Cannot sell - possible SCAM"
+                  }
+                </p>
+              </div>
+              
+              <div className={`p-4 rounded-lg backdrop-blur-sm shadow-md ${isDanger ? 'bg-red-900/40' : 'bg-emerald-900/40'}`}>
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium text-white/90">Ownership</h4>
+                  {tokenSecurityData.ownershipRenounced ? (
+                    <CheckCircle className="h-5 w-5 text-emerald-400" />
+                  ) : (
+                    <XCircle className="h-5 w-5 text-amber-400" />
+                  )}
+                </div>
+                <p className="text-sm mt-2 text-white/70">
+                  {tokenSecurityData.ownershipRenounced ? 
+                    "Ownership renounced" : 
+                    "Owner can modify contract"
+                  }
+                </p>
+              </div>
+              
+              <div className={`p-4 rounded-lg backdrop-blur-sm shadow-md ${isDanger ? 'bg-red-900/40' : 'bg-emerald-900/40'}`}>
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium text-white/90">Trading Fees</h4>
+                  <span className={`text-lg font-bold ${tokenSecurityData.highFees ? "text-amber-400" : "text-emerald-400"}`}>
+                    {tokenSecurityData.totalFee}%
+                  </span>
+                </div>
+                <div className="flex justify-between text-xs text-white/70 mt-2">
+                  <span>Buy: {tokenSecurityData.buyFee}%</span>
+                  <span>Sell: {tokenSecurityData.sellFee}%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Condensed AI Insights */}
+        <div className={`rounded-xl p-5 backdrop-blur-sm shadow-lg mb-8 ${isDanger ? 'bg-red-900/40' : 'bg-emerald-900/40'}`}>
+          <div className="flex items-center gap-2 mb-3">
+            <Sparkles className="h-5 w-5 text-white/90" />
+            <h3 className="text-lg font-semibold text-white/90">Key Insights</h3>
           </div>
           
-          <a 
-            href={getExplorerUrl()} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="text-sm text-primary flex items-center hover:underline"
-          >
-            <ExternalLink className="h-3 w-3 mr-1" />
-            View on Explorer
-          </a>
-        </div>
-      </div>
-      
-      <div className={`mb-6 rounded-lg border ${verdictInfo.color}`}>
-        <div className="p-4">
-          <div className="flex items-center gap-2 mb-2">
-            {verdictInfo.icon}
-            <h2 className="text-xl font-bold">Final Verdict: {verdictInfo.verdict}</h2>
+          <div className="space-y-3 text-white/80">
+            {/* Only show a few key sentences instead of the full analysis */}
+            {sentences.slice(0, 3).map((sentence, index) => (
+              <p key={index} className="text-sm">{sentence}.</p>
+            ))}
+          </div>
+          
+          {sentences.length > 3 && (
             <Button 
               variant="ghost" 
-              size="icon" 
-              className="ml-auto"
+              size="sm" 
+              className="mt-3 text-white/70 hover:text-white hover:bg-white/10"
               onClick={() => {
-                const audio = new Audio(`/${verdictInfo.audioFile}`);
-                audio.volume = 0.5;
-                audio.play().catch(e => console.error(e));
+                // This would be expanded to show full analysis in a real implementation
+                // For now we're just focusing on visual clarity
+                alert("Full analysis would be shown in a modal")
               }}
             >
-              <Volume2 className="h-4 w-4" />
-              <span className="sr-only">Play sound</span>
+              Show More
             </Button>
-          </div>
-          <p className="text-sm">{verdictInfo.description}</p>
-          
-          {scamIndicators && scamIndicators.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {scamIndicators.map((indicator, index) => (
-                <HoverCard key={index}>
-                  <HoverCardTrigger asChild>
-                    <Badge variant="outline" className="border-neon-red bg-neon-red/10 text-neon-red cursor-help">
-                      <AlertTriangle className="h-3 w-3 mr-1" />
-                      {indicator.label}
-                    </Badge>
-                  </HoverCardTrigger>
-                  <HoverCardContent className="w-80">
-                    <p className="text-sm">{indicator.description}</p>
-                  </HoverCardContent>
-                </HoverCard>
-              ))}
-            </div>
           )}
-        </div>
-      </div>
-      
-      {tokenData && (
-        <TokenInfoCard tokenData={tokenData} />
-      )}
-      
-      {isTokenAnalysisLoading ? (
-        <div className="w-full p-8 flex items-center justify-center">
-          <div className="animate-pulse flex flex-col items-center">
-            <div className="h-10 w-64 bg-muted rounded mb-4"></div>
-            <div className="h-4 w-48 bg-muted rounded"></div>
-          </div>
-        </div>
-      ) : tokenSecurityData && (
-        <TokenAnalysis 
-          address={address}
-          network={network}
-          tokenData={tokenSecurityData}
-        />
-      )}
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <ScoreCardWithInfo 
-          title="Trust Score" 
-          score={scores.trust_score}
-          type="trust"
-          description={scoreDescriptions.trust}
-          icon={<Shield className="h-6 w-6" />}
-        />
-        <ScoreCardWithInfo 
-          title="Developer Score" 
-          score={scores.developer_score}
-          type="developer"
-          description={scoreDescriptions.developer}
-        />
-        <ScoreCardWithInfo 
-          title="Liquidity Score" 
-          score={scores.liquidity_score}
-          type="liquidity"
-          description={scoreDescriptions.liquidity}
-          icon={<Droplet className="h-6 w-6" />}
-        />
-      </div>
-      
-      {(scores.community_score !== undefined || scores.holder_distribution !== undefined || 
-        scores.fraud_risk !== undefined || scores.social_sentiment !== undefined) && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {scores.community_score !== undefined && (
-            <ScoreCardWithInfo 
-              title="Community Score" 
-              score={scores.community_score}
-              type="community"
-              description={scoreDescriptions.community}
-              icon={<Users className="h-6 w-6" />}
-            />
-          )}
-          
-          {scores.holder_distribution !== undefined && (
-            <ScoreCardWithInfo 
-              title="Holder Distribution" 
-              score={scores.holder_distribution}
-              type="holders"
-              description={scoreDescriptions.holders}
-              icon={<BarChart2 className="h-6 w-6" />}
-            />
-          )}
-          
-          {scores.fraud_risk !== undefined && (
-            <ScoreCardWithInfo 
-              title="Fraud Risk" 
-              score={100 - scores.fraud_risk}
-              type="fraud"
-              description={scoreDescriptions.fraud}
-              icon={<AlertTriangle className="h-6 w-6" />}
-              invertScore={true}
-            />
-          )}
-          
-          {scores.social_sentiment !== undefined && (
-            <ScoreCardWithInfo 
-              title="Social Sentiment" 
-              score={scores.social_sentiment}
-              type="sentiment"
-              description={scoreDescriptions.sentiment}
-              icon={<MessageCircle className="h-6 w-6" />}
-            />
-          )}
-        </div>
-      )}
-      
-      <div className="glass-card rounded-xl p-6 mb-8">
-        <div className="flex items-center gap-2 mb-4">
-          <Sparkles className="h-5 w-5 text-primary" />
-          <h3 className="text-lg font-semibold">AI Analysis</h3>
-        </div>
-        
-        <div className="space-y-3 text-muted-foreground">
-          {sentences.map((sentence, index) => (
-            <p key={index}>{sentence}.</p>
-          ))}
         </div>
       </div>
     </div>
@@ -498,43 +703,23 @@ interface ScoreCardWithInfoProps {
   invertScore?: boolean;
 }
 
-const ScoreCardWithInfo: React.FC<ScoreCardWithInfoProps> = ({ 
-  title, 
-  score, 
-  type, 
-  description,
-  icon,
-  invertScore = false
-}) => {
-  const scoreType = type as 'trust' | 'developer' | 'liquidity';
-  
-  return (
-    <div className="relative">
-      <ScoreCard
-        title={title}
-        score={score}
-        type={type as any}
-      />
-      <div className="absolute top-2 right-2">
-        <HoverCard>
-          <HoverCardTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full">
-              <Info className="h-3 w-3" />
-              <span className="sr-only">Info</span>
-            </Button>
-          </HoverCardTrigger>
-          <HoverCardContent className="w-80">
-            <p className="text-sm">{description}</p>
-            {invertScore && (
-              <p className="text-xs text-muted-foreground mt-1">
-                Note: For this metric, higher scores indicate lower risk.
-              </p>
-            )}
-          </HoverCardContent>
-        </HoverCard>
-      </div>
-    </div>
-  );
-};
+// Missing Code component from import
+const Code = ({ className }: { className?: string }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <polyline points="16 18 22 12 16 6" />
+    <polyline points="8 6 2 12 8 18" />
+  </svg>
+);
 
 export default AnalysisReport;
