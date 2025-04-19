@@ -4,19 +4,18 @@ import React from 'react';
 const BaseIcon = ({ className }: { className?: string }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
+    viewBox="0 0 32 32"
     width="24"
     height="24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
     className={className}
   >
-    <polygon points="12 2 4 8 12 14 20 8" />
-    <line x1="12" y1="14" x2="12" y2="22" />
-    <polyline points="4 8 12 14 20 8" />
+    <g fill="none">
+      <circle cx="16" cy="16" r="16" fill="#0052FF"/>
+      <path
+        fill="#FFF"
+        d="M16 6l9 5.2v9.6L16 26l-9-5.2v-9.6L16 6zm0 2.31l-6.88 3.97v7.94L16 23.69l6.88-3.97v-7.94L16 8.31z"
+      />
+    </g>
   </svg>
 );
 
