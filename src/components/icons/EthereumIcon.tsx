@@ -11,13 +11,13 @@ const EthereumIcon = ({ className }: { className?: string }) => (
   >
     <g fill="none">
       <circle cx="16" cy="16" r="16" fill="#627EEA"/>
-      <g fill="#FFF" fillRule="evenodd">
-        <path fillRule="nonzero" d="M16 4l-.18.624v15.348l.18.18L23.5 16z" opacity=".8"/>
-        <path fillRule="nonzero" d="M16 4L8.5 16l7.5 4.152V4z"/>
-        <path fillRule="nonzero" d="M16 21.968l-.092.113v5.39l.092.27L23.5 18z" opacity=".8"/>
-        <path fillRule="nonzero" d="M16 27.741v-5.773L8.5 18z"/>
-        <path fillRule="nonzero" d="M16 20.152l7.5-4.152-7.5-3.36z" opacity=".4"/>
-        <path fillRule="nonzero" d="M8.5 16l7.5 4.152v-7.512z" opacity=".8"/>
+      <g fill="#FFF">
+        <path fillOpacity=".602" d="M16.498 4v8.87l7.497 3.35z"/>
+        <path d="M16.498 4L9 16.22l7.498-3.35z"/>
+        <path fillOpacity=".602" d="M16.498 21.968v6.027L24 17.616z"/>
+        <path d="M16.498 27.995v-6.028L9 17.616z"/>
+        <path fillOpacity=".2" d="M16.498 20.573l7.497-4.353-7.497-3.348z"/>
+        <path fillOpacity=".602" d="M9 16.22l7.498 4.353v-7.701z"/>
       </g>
     </g>
   </svg>
