@@ -14,8 +14,8 @@ const EthereumIcon = ({ className }: { className?: string }) => (
     strokeLinejoin="round"
     className={className}
   >
-    <path d="M12 2l-5 9 5 3 5-3z" />
-    <path d="M12 14l-5-3v5l5 6 5-6v-5z" />
+    <polygon points="12 2 4 12 12 22 20 12" />
+    <line x1="12" y1="2" x2="12" y2="22" />
   </svg>
 );
 

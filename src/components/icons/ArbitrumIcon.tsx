@@ -14,10 +14,9 @@ const ArbitrumIcon = ({ className }: { className?: string }) => (
     strokeLinejoin="round"
     className={className}
   >
-    <polygon points="12 2 18 7 12 12 6 7" />
-    <path d="M12 12v10" />
-    <path d="M6 7v10l6 5" />
-    <path d="M18 7v10l-6 5" />
+    <polygon points="12 2 4 8 12 14 20 8" />
+    <polyline points="4 8 12 14 20 8" />
+    <line x1="12" y1="14" x2="12" y2="22" />
   </svg>
 );
 

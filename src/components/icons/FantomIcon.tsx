@@ -14,9 +14,9 @@ const FantomIcon = ({ className }: { className?: string }) => (
     strokeLinejoin="round"
     className={className}
   >
-    <path d="M12 2L4 7v10l8 5 8-5V7z" />
-    <path d="M12 6v12" />
-    <path d="M8 9l4 3 4-3" />
+    <polygon points="12 2 4 8 12 14 20 8" />
+    <line x1="12" y1="14" x2="12" y2="22" />
+    <polyline points="4 8 12 14 20 8" />
   </svg>
 );
 

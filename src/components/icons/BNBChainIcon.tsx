@@ -14,10 +14,9 @@ const BNBChainIcon = ({ className }: { className?: string }) => (
     strokeLinejoin="round"
     className={className}
   >
-    <polygon points="12 2 16 6.5 12 11 8 6.5" />
-    <polygon points="12 13 16 17.5 12 22 8 17.5" />
-    <polygon points="3 8.5 7 13 3 17.5" />
-    <polygon points="21 8.5 17 13 21 17.5" />
+    <polygon points="12 2 4 8 12 14 20 8" />
+    <polygon points="12 14 4 20 12 22 20 20" />
+    <line x1="12" y1="8" x2="12" y2="14" />
   </svg>
 );
 

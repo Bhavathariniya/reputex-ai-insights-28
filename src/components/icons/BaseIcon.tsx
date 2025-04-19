@@ -14,10 +14,9 @@ const BaseIcon = ({ className }: { className?: string }) => (
     strokeLinejoin="round"
     className={className}
   >
-    <circle cx="12" cy="12" r="10" />
-    <path d="M8 12h8" />
-    <path d="M12 8v8" />
-    <circle cx="12" cy="12" r="4" />
+    <polygon points="12 2 4 8 12 14 20 8" />
+    <line x1="12" y1="14" x2="12" y2="22" />
+    <polyline points="4 8 12 14 20 8" />
   </svg>
 );
 

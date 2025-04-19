@@ -14,10 +14,9 @@ const ZkSyncIcon = ({ className }: { className?: string }) => (
     strokeLinejoin="round"
     className={className}
   >
-    <path d="M4 8h16" />
-    <path d="M4 12h16" />
-    <path d="M4 16h16" />
-    <path d="M9 6l6 12" />
+    <polygon points="12 2 4 8 12 14 20 8" />
+    <line x1="12" y1="14" x2="12" y2="22" />
+    <polyline points="4 8 12 14 20 8" />
   </svg>
 );
 

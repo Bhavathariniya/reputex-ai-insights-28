@@ -14,9 +14,10 @@ const PolygonIcon = ({ className }: { className?: string }) => (
     strokeLinejoin="round"
     className={className}
   >
-    <path d="M12 2L4 8v8l8 6 8-6V8z" />
-    <path d="M12 8v8" />
-    <path d="M8 11l4 4 4-4" />
+    <polygon points="12 2 4 8 12 14 20 8" />
+    <line x1="4" y1="8" x2="4" y2="16" />
+    <line x1="20" y1="8" x2="20" y2="16" />
+    <polygon points="12 14 4 20 12 22 20 20" />
   </svg>
 );
 

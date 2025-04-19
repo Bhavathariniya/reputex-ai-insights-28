@@ -14,8 +14,9 @@ const L1XIcon = ({ className }: { className?: string }) => (
     strokeLinejoin="round"
     className={className}
   >
-    <path d="M4 4h4v16H4z" />
-    <path d="M12 4h8M12 12h6M12 20h8" />
+    <polygon points="12 2 4 8 12 14 20 8" />
+    <line x1="12" y1="14" x2="12" y2="22" />
+    <polyline points="4 8 12 14 20 8" />
   </svg>
 );
 

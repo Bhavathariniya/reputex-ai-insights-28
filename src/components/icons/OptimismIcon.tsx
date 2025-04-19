@@ -14,8 +14,9 @@ const OptimismIcon = ({ className }: { className?: string }) => (
     strokeLinejoin="round"
     className={className}
   >
-    <circle cx="12" cy="12" r="10" />
-    <path d="M8 14l2-6 2 4 2-4 2 6" />
+    <polygon points="12 2 4 8 12 14 20 8" />
+    <line x1="12" y1="14" x2="12" y2="22" />
+    <polyline points="4 8 12 14 20 8" />
   </svg>
 );
 

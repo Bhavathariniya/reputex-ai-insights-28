@@ -14,8 +14,9 @@ const AvalancheIcon = ({ className }: { className?: string }) => (
     strokeLinejoin="round"
     className={className}
   >
-    <polygon points="12 2 19 21 12 17 5 21 12 2" />
-    <path d="M9 13l3-2 3 2" />
+    <polygon points="12 2 4 8 12 14 20 8" />
+    <line x1="12" y1="14" x2="12" y2="22" />
+    <polyline points="4 8 12 14 20 8" />
   </svg>
 );
 

@@ -14,9 +14,9 @@ const BitcoinIcon = ({ className }: { className?: string }) => (
     strokeLinejoin="round"
     className={className}
   >
-    <circle cx="12" cy="12" r="10" />
-    <path d="M9.5 9.5h4a2 2 0 0 1 0 4h-4m1-4v-2.5M10.5 13.5v2.5" />
-    <path d="M10 9.5h4a2 2 0 0 1 2 2v0a2 2 0 0 1-2 2h-4" />
+    <path d="M12 2 L4 12 L12 22 L20 12 Z" />
+    <line x1="12" y1="7" x2="12" y2="17" />
+    <line x1="8" y1="12" x2="16" y2="12" />
   </svg>
 );
 

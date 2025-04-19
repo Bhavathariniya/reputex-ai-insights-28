@@ -14,9 +14,9 @@ const SolanaIcon = ({ className }: { className?: string }) => (
     strokeLinejoin="round"
     className={className}
   >
-    <path d="M4 7h12a4 4 0 1 1 0 8H4" />
-    <path d="M4 11h12a4 4 0 1 1 0 8H4" />
-    <path d="M4 15h12a4 4 0 1 0 0-8H4" />
+    <polygon points="12 2 4 8 12 14 20 8" />
+    <line x1="12" y1="14" x2="12" y2="22" />
+    <line x1="4" y1="8" x2="20" y2="8" />
   </svg>
 );
 
