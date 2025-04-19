@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Search, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -5,20 +6,34 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import {
+  BitcoinIcon,
+  L1XIcon,
+  EthereumIcon,
+  BNBChainIcon,
+  PolygonIcon,
+  ArbitrumIcon,
+  OptimismIcon,
+  SolanaIcon,
+  AvalancheIcon,
+  FantomIcon,
+  BaseIcon,
+  ZkSyncIcon
+} from '@/components/icons';
 
 const BLOCKCHAINS = [
-  { id: 'bitcoin', name: 'Bitcoin', logo: 'https://cryptologos.cc/logos/bitcoin-btc-logo.svg' },
-  { id: 'l1x', name: 'L1X', logo: 'https://s2.coinmarketcap.com/static/img/coins/64x64/27331.png' },
-  { id: 'ethereum', name: 'Ethereum', logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.svg' },
-  { id: 'binance', name: 'BNB Chain', logo: 'https://cryptologos.cc/logos/bnb-bnb-logo.svg' },
-  { id: 'polygon', name: 'Polygon', logo: 'https://cryptologos.cc/logos/polygon-matic-logo.svg' },
-  { id: 'arbitrum', name: 'Arbitrum', logo: 'https://cryptologos.cc/logos/arbitrum-arb-logo.svg' },
-  { id: 'optimism', name: 'Optimism', logo: 'https://cryptologos.cc/logos/optimism-op-logo.svg' },
-  { id: 'solana', name: 'Solana', logo: 'https://cryptologos.cc/logos/solana-sol-logo.svg' },
-  { id: 'avalanche', name: 'Avalanche', logo: 'https://cryptologos.cc/logos/avalanche-avax-logo.svg' },
-  { id: 'fantom', name: 'Fantom', logo: 'https://cryptologos.cc/logos/fantom-ftm-logo.svg' },
-  { id: 'base', name: 'Base', logo: 'https://cryptologos.cc/logos/base-base-logo.svg' },
-  { id: 'zksync', name: 'zkSync', logo: 'https://cryptologos.cc/logos/zksync-zksync-logo.svg' },
+  { id: 'bitcoin', name: 'Bitcoin', icon: BitcoinIcon },
+  { id: 'l1x', name: 'L1X', icon: L1XIcon },
+  { id: 'ethereum', name: 'Ethereum', icon: EthereumIcon },
+  { id: 'binance', name: 'BNB Chain', icon: BNBChainIcon },
+  { id: 'polygon', name: 'Polygon', icon: PolygonIcon },
+  { id: 'arbitrum', name: 'Arbitrum', icon: ArbitrumIcon },
+  { id: 'optimism', name: 'Optimism', icon: OptimismIcon },
+  { id: 'solana', name: 'Solana', icon: SolanaIcon },
+  { id: 'avalanche', name: 'Avalanche', icon: AvalancheIcon },
+  { id: 'fantom', name: 'Fantom', icon: FantomIcon },
+  { id: 'base', name: 'Base', icon: BaseIcon },
+  { id: 'zksync', name: 'zkSync', icon: ZkSyncIcon },
 ];
 
 interface AddressInputProps {
@@ -33,40 +48,38 @@ const BlockchainSelector: React.FC<{
 }> = ({ selectedNetwork, onNetworkChange, disabled = false }) => {
   return (
     <div className="flex flex-wrap justify-center gap-2 mb-4">
-      {BLOCKCHAINS.map((blockchain) => (
-        <button
-          key={blockchain.id}
-          type="button"
-          disabled={disabled}
-          onClick={() => onNetworkChange(blockchain.id)}
-          className={cn(
-            "px-3 py-2 rounded-full text-sm transition-all duration-300 ease-in-out",
-            "border border-transparent hover:border-neon-cyan/50",
-            "flex items-center gap-2",
-            selectedNetwork === blockchain.id
-              ? "bg-neon-cyan/20 text-neon-cyan border-neon-cyan"
-              : "bg-muted/20 text-muted-foreground hover:bg-muted/40",
-            disabled && "opacity-50 cursor-not-allowed"
-          )}
-        >
-          <img
-            src={blockchain.logo}
-            alt={`${blockchain.name} Logo`}
-            className="h-5 w-5 object-contain"
-            onError={(e) => {
-              e.currentTarget.src = "https://placehold.co/20x20/0f172a/00e5f3?text=?";
-            }}
-          />
-          {blockchain.name}
-        </button>
-      ))}
+      {BLOCKCHAINS.map((blockchain) => {
+        const Icon = blockchain.icon;
+        return (
+          <button
+            key={blockchain.id}
+            type="button"
+            disabled={disabled}
+            onClick={() => onNetworkChange(blockchain.id)}
+            className={cn(
+              "px-3 py-2 rounded-full text-sm transition-all duration-300 ease-in-out",
+              "border border-transparent hover:border-neon-cyan/50",
+              "flex items-center gap-2",
+              selectedNetwork === blockchain.id
+                ? "bg-neon-cyan/20 text-neon-cyan border-neon-cyan"
+                : "bg-muted/20 text-muted-foreground hover:bg-muted/40",
+              disabled && "opacity-50 cursor-not-allowed"
+            )}
+          >
+            <div className="h-5 w-5 flex items-center justify-center">
+              <Icon />
+            </div>
+            {blockchain.name}
+          </button>
+        );
+      })}
     </div>
   );
 };
 
 const AddressInput: React.FC<AddressInputProps> = ({ onSubmit, isLoading }) => {
   const [address, setAddress] = useState('');
-  const [network, setNetwork] = useState('auto');
+  const [network, setNetwork] = useState('ethereum');
   const navigate = useNavigate();
 
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
