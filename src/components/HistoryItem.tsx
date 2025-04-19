@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
@@ -6,6 +5,20 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight, Trash2, AlertTriangle, CheckCircle, Shield } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  BitcoinIcon,
+  L1XIcon,
+  EthereumIcon,
+  BNBChainIcon,
+  PolygonIcon,
+  ArbitrumIcon,
+  OptimismIcon,
+  SolanaIcon,
+  AvalancheIcon,
+  FantomIcon,
+  BaseIcon,
+  ZkSyncIcon,
+} from '@/components/icons';
 
 interface HistoryItemProps {
   address: string;
@@ -70,6 +83,21 @@ const HistoryItem: React.FC<HistoryItemProps> = ({
   
   const formattedAddress = address.slice(0, 6) + '...' + address.slice(-4);
   const timeAgo = formatDistanceToNow(new Date(timestamp), { addSuffix: true });
+
+  const NetworkIcon = {
+    bitcoin: BitcoinIcon,
+    l1x: L1XIcon,
+    ethereum: EthereumIcon,
+    binance: BNBChainIcon,
+    polygon: PolygonIcon,
+    arbitrum: ArbitrumIcon,
+    optimism: OptimismIcon,
+    solana: SolanaIcon,
+    avalanche: AvalancheIcon,
+    fantom: FantomIcon,
+    base: BaseIcon,
+    zksync: ZkSyncIcon,
+  }[network] || EthereumIcon;
   
   return (
     <div className="glass-card rounded-lg p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -80,8 +108,9 @@ const HistoryItem: React.FC<HistoryItemProps> = ({
         
         <Badge 
           variant="outline" 
-          className={networkColors[network] || 'border-muted-foreground text-muted-foreground'}
+          className={`${networkColors[network] || 'border-muted-foreground text-muted-foreground'} flex items-center gap-2`}
         >
+          <NetworkIcon className="h-4 w-4" />
           {networkNames[network] || network}
         </Badge>
         
