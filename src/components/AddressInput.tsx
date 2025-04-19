@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Search, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -8,18 +7,18 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 const BLOCKCHAINS = [
-  { id: 'bitcoin', name: 'Bitcoin', logo: '/src/assets/logos/bitcoin.png' },
-  { id: 'l1x', name: 'L1X', logo: '/src/assets/logos/l1x.png' },
-  { id: 'ethereum', name: 'Ethereum', logo: '/src/assets/logos/ethereum.png' },
-  { id: 'binance', name: 'BNB Chain', logo: '/src/assets/logos/bnb-chain.svg' },
-  { id: 'polygon', name: 'Polygon', logo: '/src/assets/logos/polygon.svg' },
-  { id: 'arbitrum', name: 'Arbitrum', logo: '/src/assets/logos/arbitrum.svg' },
-  { id: 'optimism', name: 'Optimism', logo: '/src/assets/logos/optimism.svg' },
-  { id: 'solana', name: 'Solana', logo: '/src/assets/logos/solana.svg' },
-  { id: 'avalanche', name: 'Avalanche', logo: '/src/assets/logos/avalanche.png' },
-  { id: 'fantom', name: 'Fantom', logo: '/src/assets/logos/fantom.svg' },
-  { id: 'base', name: 'Base', logo: '/src/assets/logos/base.svg' },
-  { id: 'zksync', name: 'zkSync', logo: '/src/assets/logos/zksync.png' },
+  { id: 'bitcoin', name: 'Bitcoin', logo: 'https://cryptologos.cc/logos/bitcoin-btc-logo.svg' },
+  { id: 'l1x', name: 'L1X', logo: 'https://s2.coinmarketcap.com/static/img/coins/64x64/27331.png' },
+  { id: 'ethereum', name: 'Ethereum', logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.svg' },
+  { id: 'binance', name: 'BNB Chain', logo: 'https://cryptologos.cc/logos/bnb-bnb-logo.svg' },
+  { id: 'polygon', name: 'Polygon', logo: 'https://cryptologos.cc/logos/polygon-matic-logo.svg' },
+  { id: 'arbitrum', name: 'Arbitrum', logo: 'https://cryptologos.cc/logos/arbitrum-arb-logo.svg' },
+  { id: 'optimism', name: 'Optimism', logo: 'https://cryptologos.cc/logos/optimism-op-logo.svg' },
+  { id: 'solana', name: 'Solana', logo: 'https://cryptologos.cc/logos/solana-sol-logo.svg' },
+  { id: 'avalanche', name: 'Avalanche', logo: 'https://cryptologos.cc/logos/avalanche-avax-logo.svg' },
+  { id: 'fantom', name: 'Fantom', logo: 'https://cryptologos.cc/logos/fantom-ftm-logo.svg' },
+  { id: 'base', name: 'Base', logo: 'https://cryptologos.cc/logos/base-base-logo.svg' },
+  { id: 'zksync', name: 'zkSync', logo: 'https://cryptologos.cc/logos/zksync-zksync-logo.svg' },
 ];
 
 interface AddressInputProps {
@@ -54,6 +53,9 @@ const BlockchainSelector: React.FC<{
             src={blockchain.logo}
             alt={`${blockchain.name} Logo`}
             className="h-5 w-5 object-contain"
+            onError={(e) => {
+              e.currentTarget.src = "https://placehold.co/20x20/0f172a/00e5f3?text=?";
+            }}
           />
           {blockchain.name}
         </button>
@@ -76,11 +78,8 @@ const AddressInput: React.FC<AddressInputProps> = ({ onSubmit, isLoading }) => {
   };
 
   const validateAddress = (addr: string): boolean => {
-    // Basic validation for Ethereum-style addresses
     if (addr.startsWith('0x') && addr.length === 42) return true;
-    // Basic validation for Solana addresses
     if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(addr)) return true;
-    // Basic validation for Bitcoin addresses
     if (/^(1|3|bc1)[a-zA-Z0-9]{25,42}$/.test(addr)) return true;
     return false;
   };
@@ -98,10 +97,8 @@ const AddressInput: React.FC<AddressInputProps> = ({ onSubmit, isLoading }) => {
       return;
     }
     
-    // Call the onSubmit prop for any additional handling
     onSubmit(address, network);
     
-    // Navigate to results page with address and network info
     navigate('/result', {
       state: { address, network },
       replace: true

@@ -16,7 +16,9 @@ import {
   XCircle,
   Volume2,
   MessageCircle,
-  Tag
+  Tag,
+  LockIcon,
+  UnlockIcon
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
@@ -24,6 +26,16 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { analyzeTokenSecurity } from '@/lib/chain-detection';
+
+interface TokenData {
+  tokenName: string;
+  tokenSymbol: string;
+  totalSupply: string;
+  holderCount: number;
+  isLiquidityLocked: boolean;
+  decimals: number;
+  creationTime?: string;
+}
 
 interface AnalysisReportProps {
   address: string;
@@ -55,6 +67,7 @@ interface AnalysisReportProps {
     label: string;
     description: string;
   }[];
+  tokenData?: TokenData;
 }
 
 const NetworkBadge = ({ network }: { network: string }) => {
@@ -98,6 +111,67 @@ const NetworkBadge = ({ network }: { network: string }) => {
   );
 };
 
+const TokenInfoCard = ({ tokenData }: { tokenData: TokenData }) => {
+  if (!tokenData) return null;
+  
+  return (
+    <div className="bg-card/50 backdrop-blur-sm rounded-lg p-6 mb-6">
+      <h3 className="text-xl font-bold mb-4 flex items-center">
+        <Tag className="h-5 w-5 mr-2 text-primary" />
+        Token Information
+      </h3>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <div>
+            <span className="text-sm text-muted-foreground">Name:</span>
+            <p className="font-medium">{tokenData.tokenName}</p>
+          </div>
+          
+          <div>
+            <span className="text-sm text-muted-foreground">Symbol:</span>
+            <p className="font-medium">{tokenData.tokenSymbol}</p>
+          </div>
+          
+          <div>
+            <span className="text-sm text-muted-foreground">Total Supply:</span>
+            <p className="font-medium">{tokenData.totalSupply}</p>
+          </div>
+        </div>
+        
+        <div className="space-y-2">
+          <div>
+            <span className="text-sm text-muted-foreground">Holders:</span>
+            <p className="font-medium">{tokenData.holderCount || 'Unknown'}</p>
+          </div>
+          
+          <div>
+            <span className="text-sm text-muted-foreground">Decimals:</span>
+            <p className="font-medium">{tokenData.decimals}</p>
+          </div>
+          
+          <div>
+            <span className="text-sm text-muted-foreground">Liquidity:</span>
+            <p className="font-medium flex items-center">
+              {tokenData.isLiquidityLocked ? (
+                <>
+                  <LockIcon className="h-4 w-4 mr-1 text-green-500" />
+                  <span className="text-green-500">Locked</span>
+                </>
+              ) : (
+                <>
+                  <UnlockIcon className="h-4 w-4 mr-1 text-yellow-500" />
+                  <span className="text-yellow-500">Not Verified</span>
+                </>
+              )}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const AnalysisReport: React.FC<AnalysisReportProps> = ({ 
   address, 
   network = 'ethereum',
@@ -105,7 +179,8 @@ const AnalysisReport: React.FC<AnalysisReportProps> = ({
   analysis, 
   timestamp,
   sentimentData,
-  scamIndicators
+  scamIndicators,
+  tokenData
 }) => {
   const formattedAddress = address.slice(0, 6) + '...' + address.slice(-4);
   const timeAgo = formatDistanceToNow(new Date(timestamp), { addSuffix: true });
@@ -309,6 +384,10 @@ const AnalysisReport: React.FC<AnalysisReportProps> = ({
           )}
         </div>
       </div>
+      
+      {tokenData && (
+        <TokenInfoCard tokenData={tokenData} />
+      )}
       
       {isTokenAnalysisLoading ? (
         <div className="w-full p-8 flex items-center justify-center">
