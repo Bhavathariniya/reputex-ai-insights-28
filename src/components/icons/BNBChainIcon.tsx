@@ -2,22 +2,13 @@
 import React from 'react';
 
 const BNBChainIcon = ({ className }: { className?: string }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 32 32"
-    width="24"
-    height="24"
-    className={className}
-  >
-    <image 
-      href="/lovable-uploads/320cfae5-dc37-43b0-90b4-16f8b624cfb2.png" 
-      width="32" 
-      height="32"
-      x="0"
-      y="0"
-      preserveAspectRatio="xMidYMid meet"
-    />
-  </svg>
+  <img 
+    src="/lovable-uploads/175bedf9-a6e3-4ace-8247-1d6c327ad849.png" 
+    alt="BNB Chain Logo" 
+    width="24" 
+    height="24" 
+    className={`rounded-full ${className || ''}`}
+  />
 );
 
 export default BNBChainIcon;
