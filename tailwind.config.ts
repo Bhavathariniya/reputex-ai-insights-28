@@ -59,6 +59,9 @@ export default {
           cyan: '#00FFFF',
           blue: '#2E8BFF',
           violet: '#4B0082',
+          yellow: '#FFFF00',
+          orange: '#FFA500',
+          red: '#FF0000',
         },
         sidebar: {
           DEFAULT: 'hsl(var(--sidebar-background))',
