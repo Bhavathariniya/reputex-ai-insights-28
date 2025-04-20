@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
 import { Search, Loader2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { detectBlockchain } from '../lib/detectBlockchain';
 import { toast } from '../components/ui/use-toast';
 
@@ -66,15 +65,19 @@ const BLOCKCHAIN_OPTIONS = [
   { id: 'zksync', name: 'zkSync', icon: ZkSyncIcon },
 ];
 
-const AddressInput = () => {
+interface AddressInputProps {
+  onSubmit?: (address: string, network: string) => void;
+  isLoading?: boolean;
+}
+
+const AddressInput: React.FC<AddressInputProps> = ({ onSubmit, isLoading }) => {
   const [address, setAddress] = useState('');
   const [selectedBlockchain, setSelectedBlockchain] = useState('ethereum');
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+  const [localLoading, setLocalLoading] = useState(false);
 
   // New: Detect blockchain and update selected automatically
   const handleDetectBlockchain = async (input: string) => {
-    setLoading(true);
+    setLocalLoading(true);
     try {
       const detection = detectBlockchain(input);
 
@@ -94,7 +97,7 @@ const AddressInput = () => {
         });
       }
     } finally {
-      setLoading(false);
+      setLocalLoading(false);
     }
   };
 
@@ -109,7 +112,6 @@ const AddressInput = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!address.trim()) {
       toast({
         title: "Please enter an address or token.",
@@ -117,12 +119,20 @@ const AddressInput = () => {
       });
       return;
     }
-    setLoading(true);
-    await handleDetectBlockchain(address);
-    setLoading(false);
-
-    navigate(`/result?address=${encodeURIComponent(address.trim())}&chain=${selectedBlockchain}`);
+    if (onSubmit) {
+      onSubmit(address.trim(), selectedBlockchain);
+    } else {
+      // fallback toast if no submit handler
+      toast({
+        title: "No submit handler provided.",
+        description: "Please add an onSubmit to AddressInput.",
+        variant: "destructive",
+      });
+    }
   };
+
+  // Use parent loading if provided, else fall back to local detection loading
+  const loading = typeof isLoading === 'boolean' ? isLoading : localLoading;
 
   return (
     <form className="w-full flex flex-col items-center gap-3" onSubmit={handleSubmit}>
