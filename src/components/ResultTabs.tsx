@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, AlertTriangle, Lock, Code, Users, BarChart2, Flame } from 'lucide-react';
+import { Shield, AlertTriangle, Lock, Code, Users, BarChart2, Flame, CheckCircle } from 'lucide-react';
 import TokenContractAnalysis from '@/components/TokenContractAnalysis';
 import TokenAnalysis from '@/components/TokenAnalysis';
 import ScoreCard from '@/components/ScoreCard';
