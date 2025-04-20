@@ -1,7 +1,7 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Github, Twitter, Globe } from 'lucide-react';
+import { L1XIcon } from './icons';
 
 const Footer = () => {
   return (
@@ -42,7 +42,14 @@ const Footer = () => {
         </div>
         
         <div className="mt-8 pt-4 border-t border-border/50 flex flex-col md:flex-row justify-between items-center text-sm text-muted-foreground">
-          <p>© {new Date().getFullYear()} ReputexAI. All rights reserved.</p>
+          <div className="flex items-center gap-2">
+            <span>© {new Date().getFullYear()} ReputexAI.</span>
+            <div className="flex items-center gap-1">
+              <span>Powered by</span>
+              <L1XIcon className="w-5 h-5" />
+              <span>L1X</span>
+            </div>
+          </div>
           <div className="flex gap-4 mt-4 md:mt-0">
             <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
             <Link to="/terms" className="hover:text-foreground transition-colors">Terms of Service</Link>
