@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Search, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -10,18 +9,15 @@ import {
   BitcoinIcon,
   L1XIcon,
   EthereumIcon,
-  // Remove BNBChainIcon import as we will use the image instead
   PolygonIcon,
   ArbitrumIcon,
   OptimismIcon,
   SolanaIcon,
   AvalancheIcon,
   FantomIcon,
-  BaseIcon,
   ZkSyncIcon
 } from '@/components/icons';
 
-// Circular image component for BNB Chain
 const BnbChainCircleImage = () => (
   <span
     className="inline-block h-8 w-8 bg-white rounded-full flex items-center justify-center border border-yellow-400 shadow-sm"
@@ -41,11 +37,29 @@ const BnbChainCircleImage = () => (
   </span>
 );
 
+const BaseCircleImage = () => (
+  <span
+    className="inline-block h-8 w-8 bg-white rounded-full flex items-center justify-center border border-[#0052FF] shadow-sm"
+    style={{
+      backgroundColor: "#fff",
+    }}
+  >
+    <img
+      src="/lovable-uploads/20b1e6be-88d4-4b75-85a5-0a5a1aa7727e.png"
+      alt="Base"
+      className="rounded-full object-contain h-7 w-7"
+      style={{
+        backgroundColor: "transparent",
+      }}
+      draggable={false}
+    />
+  </span>
+);
+
 const BLOCKCHAINS = [
   { id: 'bitcoin', name: 'Bitcoin', icon: BitcoinIcon },
   { id: 'l1x', name: 'L1X', icon: L1XIcon },
   { id: 'ethereum', name: 'Ethereum', icon: EthereumIcon },
-  // Use the custom BnbChainCircleImage component for BNB Chain
   { id: 'binance', name: 'BNB Chain', icon: BnbChainCircleImage },
   { id: 'polygon', name: 'Polygon', icon: PolygonIcon },
   { id: 'arbitrum', name: 'Arbitrum', icon: ArbitrumIcon },
@@ -53,7 +67,7 @@ const BLOCKCHAINS = [
   { id: 'solana', name: 'Solana', icon: SolanaIcon },
   { id: 'avalanche', name: 'Avalanche', icon: AvalancheIcon },
   { id: 'fantom', name: 'Fantom', icon: FantomIcon },
-  { id: 'base', name: 'Base', icon: BaseIcon },
+  { id: 'base', name: 'Base', icon: BaseCircleImage },
   { id: 'zksync', name: 'zkSync', icon: ZkSyncIcon },
 ];
 
@@ -181,4 +195,3 @@ const AddressInput: React.FC<AddressInputProps> = ({ onSubmit, isLoading }) => {
 };
 
 export default AddressInput;
-
