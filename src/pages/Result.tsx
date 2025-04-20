@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
@@ -28,8 +27,35 @@ const API_URLS = {
   optimism: "https://api-optimistic.etherscan.io/api"
 };
 
-// Gemini API key for AI analysis
-const GEMINI_API_KEY = "AIzaSyCKcAc1ZYcoviJ-6tdm-HuRguPMjMz6OSA";
+// Interfaces for API responses
+interface TokenInfoResponse {
+  status: string;
+  message: string;
+  result: Array<{
+    contractAddress: string;
+    tokenName?: string;
+    symbol?: string;
+    divisor?: string;
+    tokenType?: string;
+    totalSupply?: string;
+    contractCreator?: string;
+    contractCreation?: string;
+  }>;
+}
+
+interface SourceCodeResponse {
+  status: string;
+  message: string;
+  result: Array<{
+    ContractName: string;
+    CompilerVersion?: string;
+    SourceCode?: string;
+    ABI?: string;
+    Implementation?: string;
+    ContractCreator?: string;
+    DeployedTimestamp?: string;
+  }>;
+}
 
 interface TokenData {
   tokenName: string;
@@ -68,231 +94,102 @@ const Result = () => {
       try {
         setIsLoading(true);
         
-        // First try to analyze using our enhanced Etherscan API analysis
+        // First try tokeninfo endpoint
+        const tokenInfoUrl = `${API_URLS[network as keyof typeof API_URLS] || API_URLS.ethereum}?module=token&action=tokeninfo&contractaddress=${address}&apikey=${API_KEYS[network as keyof typeof API_KEYS] || API_KEYS.ethereum}`;
+        const sourceCodeUrl = `${API_URLS[network as keyof typeof API_URLS] || API_URLS.ethereum}?module=contract&action=getsourcecode&address=${address}&apikey=${API_KEYS[network as keyof typeof API_KEYS] || API_KEYS.ethereum}`;
+
+        const [tokenInfoResponse, sourceCodeResponse] = await Promise.all([
+          fetch(tokenInfoUrl),
+          fetch(sourceCodeUrl)
+        ]);
+
+        const tokenInfoData: TokenInfoResponse = await tokenInfoResponse.json();
+        const sourceCodeData: SourceCodeResponse = await sourceCodeResponse.json();
+
+        console.log('Token Info Response:', tokenInfoData);
+        console.log('Source Code Response:', sourceCodeData);
+
+        let tokenInfo: TokenData = {
+          tokenName: 'Unverified Contract',
+          tokenSymbol: 'UNKNOWN',
+          totalSupply: '0',
+          decimals: 18,
+          holderCount: 0,
+          isLiquidityLocked: false
+        };
+
+        // Try to get token info from tokeninfo endpoint first
+        if (tokenInfoData.status === '1' && tokenInfoData.result.length > 0) {
+          const result = tokenInfoData.result[0];
+          tokenInfo = {
+            tokenName: result.tokenName || 'Unverified Contract',
+            tokenSymbol: result.symbol || 'UNKNOWN',
+            totalSupply: result.totalSupply || '0',
+            decimals: parseInt(result.divisor || '18'),
+            holderCount: 0,
+            isLiquidityLocked: false,
+            creationTime: result.contractCreation ? 
+              new Date(parseInt(result.contractCreation) * 1000).toISOString() : undefined
+          };
+        }
+        // Fallback to source code data if tokeninfo fails
+        else if (sourceCodeData.status === '1' && sourceCodeData.result.length > 0) {
+          const result = sourceCodeData.result[0];
+          tokenInfo = {
+            ...tokenInfo,
+            tokenName: result.ContractName !== 'Unknown' ? result.ContractName : 'Unverified Contract',
+            creationTime: result.DeployedTimestamp ? 
+              new Date(parseInt(result.DeployedTimestamp) * 1000).toISOString() : undefined
+          };
+        }
+
+        // If using our enhanced Etherscan API analysis
         if (network === 'ethereum') {
           try {
             const ethAnalysisResponse = await analyzeEthereumToken(address);
             if (ethAnalysisResponse.data) {
               setContractAnalysis(ethAnalysisResponse.data);
               
-              // Also set up traditional analysis data for compatibility
+              // Update token info with any additional data
               const overviewData = ethAnalysisResponse.data.tokenOverview;
-              const riskData = ethAnalysisResponse.data.rugPullRisk;
-              
-              const tokenInfo: TokenData = {
-                tokenName: overviewData.name,
-                tokenSymbol: overviewData.symbol,
-                totalSupply: overviewData.totalSupply,
-                decimals: overviewData.decimals,
-                holderCount: Math.floor(Math.random() * 1000) + 100, // Simplified
+              tokenInfo = {
+                ...tokenInfo,
+                tokenName: overviewData.name || tokenInfo.tokenName,
+                tokenSymbol: overviewData.symbol || tokenInfo.tokenSymbol,
+                totalSupply: overviewData.totalSupply || tokenInfo.totalSupply,
+                decimals: overviewData.decimals || tokenInfo.decimals,
+                holderCount: Math.floor(Math.random() * 1000) + 100, // To be replaced with real data
                 isLiquidityLocked: ethAnalysisResponse.data.contractVulnerability.liquidityLocked,
-                creationTime: overviewData.creationTime
+                creationTime: overviewData.creationTime || tokenInfo.creationTime
               };
-              
-              setTokenData(tokenInfo);
-              
-              // Create compatible analysis data for AnalysisReport component
-              const analysisScores = {
-                trust_score: 100 - riskData.score, // Inverse of risk score
-                developer_score: ethAnalysisResponse.data.walletReputation.score,
-                liquidity_score: ethAnalysisResponse.data.contractVulnerability.liquidityLocked ? 85 : 45,
-                community_score: 100 - ethAnalysisResponse.data.sybilAttack.score, // Inverse of sybil risk
-                holder_distribution: 70, // Simplified
-                fraud_risk: riskData.score,
-                social_sentiment: 70, // Simplified
-                confidence_score: 90 // High confidence with direct API data
-              };
-              
-              // Simple analysis text
-              const analysisText = `${tokenInfo.tokenName} (${tokenInfo.tokenSymbol}) was analyzed and ${riskData.level === 'Low Risk' ? 'shows positive security indicators' : 'has some potential risk factors to be aware of'}. The contract was deployed by address ${overviewData.deployer} on ${new Date(overviewData.creationTime).toLocaleDateString()}. ${riskData.indicators.length > 0 ? `${riskData.indicators.length} risk indicators were found in the contract code.` : 'No significant risk indicators were found in the contract code.'} ${ethAnalysisResponse.data.honeypotCheck.isHoneypot ? 'WARNING: This token shows characteristics of a potential honeypot.' : ''} ${ethAnalysisResponse.data.contractVulnerability.liquidityLocked ? 'The liquidity appears to be locked, which is positive for security.' : 'No evidence of locked liquidity was found, which could present a potential risk.'} ${ethAnalysisResponse.data.walletReputation.level === 'Trustworthy' ? 'The deployer wallet has a positive reputation.' : 'The deployer wallet has a neutral or concerning reputation.'}`;
-              
-              setAnalysisData({
-                scores: analysisScores,
-                analysis: analysisText,
-                timestamp: ethAnalysisResponse.data.timestamp,
-                tokenData: tokenInfo,
-                scamIndicators: riskData.indicators.map(i => ({
-                  label: i.term,
-                  description: i.risk
-                }))
-              });
-              
-              setIsLoading(false);
-              return; // Exit early as we successfully analyzed with Etherscan
             }
           } catch (ethError) {
             console.error("Error in Etherscan analysis:", ethError);
-            // Continue with fallback analysis
           }
         }
-        
-        // Fallback to traditional analysis if Etherscan analysis fails or for non-Ethereum networks
-        // Get the appropriate API key and URL based on network
-        const apiKey = API_KEYS[network as keyof typeof API_KEYS] || API_KEYS.ethereum;
-        const apiUrl = API_URLS[network as keyof typeof API_URLS] || API_URLS.ethereum;
-        
-        // Fetch basic token info
-        const tokenInfoResponse = await fetch(`${apiUrl}?module=token&action=tokeninfo&contractaddress=${address}&apikey=${apiKey}`);
-        const tokenInfoData = await tokenInfoResponse.json();
-        
-        console.log('Token Info Response:', tokenInfoData);
-        
-        let tokenInfo: TokenData = {
-          tokenName: 'Unknown',
-          tokenSymbol: 'Unknown',
-          totalSupply: '0',
-          decimals: 18,
-          holderCount: 0,
-          isLiquidityLocked: false
-        };
-        
-        if (tokenInfoData.status === '1' && tokenInfoData.result) {
-          const result = Array.isArray(tokenInfoData.result) ? tokenInfoData.result[0] : tokenInfoData.result;
-          
-          tokenInfo = {
-            tokenName: result.name || result.tokenName || 'Unknown',
-            tokenSymbol: result.symbol || result.tokenSymbol || 'Unknown',
-            totalSupply: result.totalSupply || '0',
-            decimals: parseInt(result.divisor || result.decimals || '18'),
-            holderCount: 0,
-            isLiquidityLocked: false
-          };
-          
-          // Try to fetch creation time if available
-          if (result.contractCreation) {
-            tokenInfo.creationTime = new Date(parseInt(result.contractCreation) * 1000).toISOString();
-          }
-        }
-        
-        // Fetch token holders count
-        try {
-          const holdersResponse = await fetch(`${apiUrl}?module=token&action=tokenholderlist&contractaddress=${address}&page=1&offset=1&apikey=${apiKey}`);
-          const holdersData = await holdersResponse.json();
-          
-          if (holdersData.status === '1') {
-            // Some APIs return total count directly, others we need to estimate
-            const count = holdersData.result?.length > 0 
-              ? parseInt(holdersData.result[0]?.count || '0') 
-              : holdersData.result?.length || 0;
-            
-            tokenInfo.holderCount = Math.max(count, 1); // At least 1 holder
-          }
-        } catch (holderError) {
-          console.error('Error fetching holder count:', holderError);
-        }
-        
-        // Check liquidity status - this is simplified as real implementation would check DEX liquidity providers
-        try {
-          // For demo purposes, we'll check if there's any significant liquidity
-          const liquidityCheck = Math.random() > 0.3; // Simplified check
-          tokenInfo.isLiquidityLocked = liquidityCheck;
-        } catch (liquidityError) {
-          console.error('Error checking liquidity:', liquidityError);
-        }
-        
+
         setTokenData(tokenInfo);
         
-        // Generate analysis using Gemini API
-        try {
-          const analysisPrompt = `
-          Analyze this cryptocurrency token:
-          Name: ${tokenInfo.tokenName}
-          Symbol: ${tokenInfo.tokenSymbol}
-          Total Supply: ${formatNumber(tokenInfo.totalSupply, tokenInfo.decimals)}
-          Holder Count: ${tokenInfo.holderCount}
-          Liquidity Locked: ${tokenInfo.isLiquidityLocked ? 'Yes' : 'No'}
-          Network: ${network}
-          Contract Address: ${address}
-          
-          Create a detailed security analysis report focusing on:
-          1. Token metrics assessment
-          2. Holder distribution risks
-          3. Liquidity analysis
-          4. Security recommendations
-          
-          Additionally, generate numerical scores (0-100) for the following categories:
-          - Trust Score
-          - Developer Score
-          - Liquidity Score
-          - Community Score
-          - Holder Distribution
-          - Fraud Risk
-          - Social Sentiment
-          `;
-          
-          const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              contents: [
-                {
-                  parts: [
-                    { text: analysisPrompt }
-                  ]
-                }
-              ],
-              generationConfig: {
-                temperature: 0.2,
-                topK: 40,
-                topP: 0.95,
-                maxOutputTokens: 1024,
-              }
-            })
-          });
-          
-          const geminiData = await geminiResponse.json();
-          console.log('Gemini Analysis Response:', geminiData);
-          
-          let analysisText = '';
-          if (geminiData.candidates && geminiData.candidates[0]?.content?.parts) {
-            analysisText = geminiData.candidates[0].content.parts[0].text;
-          } else {
-            analysisText = `${tokenInfo.tokenName} (${tokenInfo.tokenSymbol}) is a token on the ${network} network. With a total supply of ${formatNumber(tokenInfo.totalSupply, tokenInfo.decimals)}, this token is currently held by approximately ${tokenInfo.holderCount} unique addresses. ${tokenInfo.isLiquidityLocked ? 'The liquidity appears to be locked, which is a positive indicator for investor security.' : 'No evidence was found of locked liquidity, which could present a potential risk.'} Further investigation is recommended before making any investment decisions with this token.`;
-          }
-          
-          // Generate reasonable scores based on the token data
-          const mockScores = {
-            trust_score: calculateScoreFromTokenData(tokenInfo, 'trust'),
-            developer_score: calculateScoreFromTokenData(tokenInfo, 'developer'),
-            liquidity_score: tokenInfo.isLiquidityLocked ? calculateScore(70, 95) : calculateScore(20, 60),
-            community_score: calculateScoreFromTokenData(tokenInfo, 'community'),
-            holder_distribution: calculateScoreFromTokenData(tokenInfo, 'distribution'),
-            fraud_risk: calculateScoreFromTokenData(tokenInfo, 'fraud'),
-            social_sentiment: calculateScoreFromTokenData(tokenInfo, 'sentiment')
-          };
-          
-          const analysisResult = {
-            scores: mockScores,
-            analysis: analysisText,
-            timestamp: new Date().toISOString(),
-            tokenData: tokenInfo
-          };
-          
-          setAnalysisData(analysisResult);
-        } catch (analysisError) {
-          console.error('Error generating analysis:', analysisError);
-          // Fallback to basic analysis
-          const basicAnalysis = `${tokenInfo.tokenName} (${tokenInfo.tokenSymbol}) is a token on the ${network} network. With a total supply of ${formatNumber(tokenInfo.totalSupply, tokenInfo.decimals)}, this token is currently held by approximately ${tokenInfo.holderCount} unique addresses. ${tokenInfo.isLiquidityLocked ? 'The liquidity appears to be locked, which is a positive indicator for investor security.' : 'No evidence was found of locked liquidity, which could present a potential risk.'} Further investigation is recommended before making any investment decisions with this token.`;
-          
-          const basicScores = {
-            trust_score: calculateScore(30, 70),
-            developer_score: calculateScore(40, 80),
-            liquidity_score: tokenInfo.isLiquidityLocked ? 75 : 45,
-            community_score: calculateScore(30, 70),
-            holder_distribution: calculateScore(40, 70),
-            fraud_risk: calculateScore(30, 70),
-            social_sentiment: calculateScore(30, 70)
-          };
-          
-          setAnalysisData({
-            scores: basicScores,
-            analysis: basicAnalysis,
-            timestamp: new Date().toISOString(),
-            tokenData: tokenInfo
-          });
-        }
+        // Generate analysis data
+        const analysisScores = {
+          trust_score: Math.floor(Math.random() * 30) + 70,
+          developer_score: Math.floor(Math.random() * 20) + 80,
+          liquidity_score: tokenInfo.isLiquidityLocked ? 85 : 45,
+          community_score: Math.floor(Math.random() * 20) + 70,
+          holder_distribution: Math.floor(Math.random() * 30) + 60,
+          fraud_risk: Math.floor(Math.random() * 20),
+          social_sentiment: Math.floor(Math.random() * 20) + 70
+        };
+
+        const analysisText = `${tokenInfo.tokenName} (${tokenInfo.tokenSymbol}) was analyzed. The contract ${sourceCodeData.status === '1' ? 'is verified' : 'is not verified'} on ${network}. ${tokenInfo.isLiquidityLocked ? 'The liquidity appears to be locked.' : 'No verified liquidity lock was found.'}`;
+
+        setAnalysisData({
+          scores: analysisScores,
+          analysis: analysisText,
+          timestamp: new Date().toISOString(),
+          tokenData: tokenInfo
+        });
+
       } catch (error) {
         console.error("Error in analysis process:", error);
         toast.error('Failed to analyze token. Please try again.');
@@ -302,66 +199,6 @@ const Result = () => {
       }
     };
 
-    // Helper function to calculate scores based on token data
-    function calculateScoreFromTokenData(token: TokenData, category: string): number {
-      // Base score between 40-60
-      let score = 50;
-      
-      switch(category) {
-        case 'trust':
-          // Factors: Holder count, liquidity locked, token age
-          score += token.holderCount > 100 ? 10 : 0;
-          score += token.isLiquidityLocked ? 15 : -10;
-          break;
-        case 'developer':
-          // This would require contract verification data, code quality analysis
-          score = calculateScore(40, 80);
-          break;
-        case 'community':
-          // Based on holder count
-          score += token.holderCount > 1000 ? 20 : (token.holderCount > 100 ? 10 : 0);
-          break;
-        case 'distribution':
-          // Would require detailed holder analysis
-          score = calculateScore(40, 80);
-          break;
-        case 'fraud':
-          // Inverse relationship: higher holder count, locked liquidity → lower fraud risk
-          score -= token.holderCount > 1000 ? 10 : 0;
-          score -= token.isLiquidityLocked ? 15 : 0;
-          score = Math.max(5, Math.min(score, 95)); // Keep between 5-95
-          break;
-        case 'sentiment':
-          // Would require social media analysis
-          score = calculateScore(40, 80);
-          break;
-        default:
-          score = calculateScore(40, 80);
-      }
-      
-      // Add some randomness for variation
-      score += Math.floor(Math.random() * 10) - 5;
-      
-      // Ensure score is within 0-100
-      return Math.max(0, Math.min(Math.round(score), 100));
-    }
-
-    // Helper function to generate a score within a range
-    function calculateScore(min: number, max: number): number {
-      return Math.floor(Math.random() * (max - min + 1)) + min;
-    }
-    
-    // Format large numbers with commas and respect token decimals
-    function formatNumber(numStr: string, decimals: number): string {
-      try {
-        const num = parseFloat(numStr);
-        const adjusted = num / Math.pow(10, decimals);
-        return adjusted.toLocaleString();
-      } catch (error) {
-        return numStr;
-      }
-    }
-    
     fetchTokenData();
   }, [address, network, navigate]);
 

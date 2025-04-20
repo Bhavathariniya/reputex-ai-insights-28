@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Shield, AlertTriangle, Lock, Code, Users, BarChart2, Flame, CheckCircle } from 'lucide-react';
@@ -29,25 +30,25 @@ const ResultTabs: React.FC<ResultTabsProps> = ({
 
   return (
     <Tabs defaultValue="overview" className="w-full space-y-6">
-      <TabsList className="grid grid-cols-2 md:grid-cols-5 gap-2">
-        <TabsTrigger value="overview" className="flex items-center gap-2">
-          <Shield className="h-4 w-4" />
+      <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 gap-1 md:gap-2">
+        <TabsTrigger value="overview" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
+          <Shield className="h-3 w-3 md:h-4 md:w-4" />
           <span className="hidden md:inline">Overview</span>
         </TabsTrigger>
-        <TabsTrigger value="reputation" className="flex items-center gap-2">
-          <BarChart2 className="h-4 w-4" />
-          <span className="hidden md:inline">Reputation Metrics</span>
+        <TabsTrigger value="reputation" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
+          <BarChart2 className="h-3 w-3 md:h-4 md:w-4" />
+          <span className="hidden md:inline">Reputation</span>
         </TabsTrigger>
-        <TabsTrigger value="risk-analysis" className="flex items-center gap-2">
-          <AlertTriangle className="h-4 w-4" />
+        <TabsTrigger value="risk-analysis" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
+          <AlertTriangle className="h-3 w-3 md:h-4 md:w-4" />
           <span className="hidden md:inline">Risk Analysis</span>
         </TabsTrigger>
-        <TabsTrigger value="wallet-details" className="flex items-center gap-2">
-          <Users className="h-4 w-4" />
+        <TabsTrigger value="wallet-details" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
+          <Users className="h-3 w-3 md:h-4 md:w-4" />
           <span className="hidden md:inline">Wallet Details</span>
         </TabsTrigger>
-        <TabsTrigger value="scam-pattern" className="flex items-center gap-2">
-          <Flame className="h-4 w-4" />
+        <TabsTrigger value="scam-pattern" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
+          <Flame className="h-3 w-3 md:h-4 md:w-4" />
           <span className="hidden md:inline">Scam Pattern</span>
         </TabsTrigger>
       </TabsList>
