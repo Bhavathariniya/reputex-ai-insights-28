@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Shield, AlertTriangle, Lock, Code, Users, BarChart2, Flame, CheckCircle } from 'lucide-react';
@@ -27,6 +26,13 @@ const ResultTabs: React.FC<ResultTabsProps> = ({
   if (!contractAnalysis && !analysisData) {
     return null;
   }
+
+  const formatTokenAmount = (amount: string, decimals: number): string => {
+    if (!amount || isNaN(Number(amount))) return '0';
+    const amountNum = parseFloat(amount);
+    const formattedAmount = amountNum / Math.pow(10, decimals);
+    return formattedAmount.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  };
 
   return (
     <Tabs defaultValue="overview" className="w-full space-y-6">
@@ -78,7 +84,7 @@ const ResultTabs: React.FC<ResultTabsProps> = ({
                 </div>
                 <div>
                   <h3 className="text-sm text-muted-foreground mb-1">Total Supply</h3>
-                  <p className="font-semibold text-lg">{tokenData.totalSupply}</p>
+                  <p className="font-semibold text-lg">{formatTokenAmount(tokenData.totalSupply, tokenData.decimals)}</p>
                 </div>
                 <div>
                   <h3 className="text-sm text-muted-foreground mb-1">Decimals</h3>
@@ -90,19 +96,41 @@ const ResultTabs: React.FC<ResultTabsProps> = ({
                     {address}
                   </div>
                 </div>
-                {contractAnalysis?.tokenOverview && (
-                  <>
-                    <div>
-                      <h3 className="text-sm text-muted-foreground mb-1">Deployer</h3>
-                      <div className="font-mono text-sm truncate" title={contractAnalysis.tokenOverview.deployer}>
-                        {contractAnalysis.tokenOverview.deployer?.substring(0, 10)}...{contractAnalysis.tokenOverview.deployer?.substring(contractAnalysis.tokenOverview.deployer.length - 8)}
-                      </div>
+                <div>
+                  <h3 className="text-sm text-muted-foreground mb-1">Contract Verified</h3>
+                  <div className="font-medium flex items-center">
+                    {tokenData.isVerified ? (
+                      <Badge className="bg-emerald-500/20 text-emerald-500">
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Yes
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-red-500/20 text-red-500">
+                        <AlertTriangle className="h-3 w-3 mr-1" />
+                        No
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                {tokenData.compilerVersion && (
+                  <div>
+                    <h3 className="text-sm text-muted-foreground mb-1">Compiler Version</h3>
+                    <p className="text-sm">{tokenData.compilerVersion}</p>
+                  </div>
+                )}
+                {tokenData.contractCreator && (
+                  <div className="col-span-1 md:col-span-2">
+                    <h3 className="text-sm text-muted-foreground mb-1">Contract Creator</h3>
+                    <div className="font-mono text-xs bg-muted/30 p-2 rounded break-all">
+                      {tokenData.contractCreator}
                     </div>
-                    <div>
-                      <h3 className="text-sm text-muted-foreground mb-1">Creation Time</h3>
-                      <p className="text-sm">{new Date(contractAnalysis.tokenOverview.creationTime).toLocaleDateString()} {new Date(contractAnalysis.tokenOverview.creationTime).toLocaleTimeString()}</p>
-                    </div>
-                  </>
+                  </div>
+                )}
+                {tokenData.creationTime && (
+                  <div>
+                    <h3 className="text-sm text-muted-foreground mb-1">Creation Date</h3>
+                    <p className="text-sm">{new Date(tokenData.creationTime).toLocaleDateString()} {new Date(tokenData.creationTime).toLocaleTimeString()}</p>
+                  </div>
                 )}
               </div>
             </CardContent>
