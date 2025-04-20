@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
 import { Search, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { detectBlockchain } from '../lib/detectBlockchain';
-import { toast } from '../components/ui/use-toast';
-
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 import {
   BitcoinIcon,
   L1XIcon,
@@ -18,15 +18,20 @@ import {
   ZkSyncIcon
 } from '@/components/icons';
 
-// BNB chain with custom circle image
 const BnbChainCircleImage = () => (
   <span
     className="inline-block h-8 w-8 bg-white rounded-full flex items-center justify-center border border-yellow-400 shadow-sm"
+    style={{
+      backgroundColor: "#fff",
+    }}
   >
     <img
-      src="/lovable-uploads/320cfae5-dc37-43b0-90b4-16f8b624cfb2.png"
+      src="/lovable-uploads/acf3bbb7-7f0e-43ab-9891-2268f712ef65.png"
       alt="BNB Chain"
       className="rounded-full object-contain h-7 w-7"
+      style={{
+        backgroundColor: "transparent",
+      }}
       draggable={false}
     />
   </span>
@@ -51,7 +56,7 @@ const BaseCircleImage = () => (
   </span>
 );
 
-const BLOCKCHAIN_OPTIONS = [
+const BLOCKCHAINS = [
   { id: 'bitcoin', name: 'Bitcoin', icon: BitcoinIcon },
   { id: 'l1x', name: 'L1X', icon: L1XIcon },
   { id: 'ethereum', name: 'Ethereum', icon: EthereumIcon },
@@ -66,101 +71,127 @@ const BLOCKCHAIN_OPTIONS = [
   { id: 'zksync', name: 'zkSync', icon: ZkSyncIcon },
 ];
 
-const AddressInput = () => {
+interface AddressInputProps {
+  onSubmit: (address: string, network: string) => void;
+  isLoading: boolean;
+}
+
+const BlockchainSelector: React.FC<{
+  selectedNetwork: string;
+  onNetworkChange: (network: string) => void;
+  disabled?: boolean;
+}> = ({ selectedNetwork, onNetworkChange, disabled = false }) => {
+  return (
+    <div className="flex flex-wrap justify-center gap-2 mb-4">
+      {BLOCKCHAINS.map((blockchain) => {
+        const Icon = blockchain.icon;
+        return (
+          <button
+            key={blockchain.id}
+            type="button"
+            disabled={disabled}
+            onClick={() => onNetworkChange(blockchain.id)}
+            className={cn(
+              "px-3 py-2 rounded-full text-sm transition-all duration-300 ease-in-out",
+              "border border-transparent hover:border-neon-cyan/50",
+              "flex items-center gap-2",
+              selectedNetwork === blockchain.id
+                ? "bg-neon-cyan/20 text-neon-cyan border-neon-cyan"
+                : "bg-muted/20 text-muted-foreground hover:bg-muted/40",
+              disabled && "opacity-50 cursor-not-allowed"
+            )}
+          >
+            <div className="h-8 w-8 flex items-center justify-center">
+              <Icon />
+            </div>
+            {blockchain.name}
+          </button>
+        );
+      })}
+    </div>
+  );
+};
+
+const AddressInput: React.FC<AddressInputProps> = ({ onSubmit, isLoading }) => {
   const [address, setAddress] = useState('');
-  const [selectedBlockchain, setSelectedBlockchain] = useState('ethereum');
-  const [loading, setLoading] = useState(false);
+  const [network, setNetwork] = useState('ethereum');
   const navigate = useNavigate();
 
-  // New: Detect blockchain and update selected automatically
-  const handleDetectBlockchain = async (input: string) => {
-    setLoading(true);
-    try {
-      const detection = detectBlockchain(input);
-
-      if (detection.id && detection.id !== selectedBlockchain) {
-        setSelectedBlockchain(detection.id);
-
-        toast({
-          title: `Detected: ${detection.name}`,
-          description: `The address matches the ${detection.name} blockchain format.`,
-          duration: 2300,
-        });
-      } else if (!detection.id) {
-        toast({
-          title: "Unknown Blockchain",
-          description: "Unable to detect the blockchain from the input format.",
-          variant: "destructive",
-        });
-      }
-    } finally {
-      setLoading(false);
-    }
+  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setAddress(e.target.value.trim());
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setAddress(val);
-
-    if (val.length > 7) {
-      handleDetectBlockchain(val);
-    }
+  const handleNetworkChange = (value: string) => {
+    setNetwork(value);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const validateAddress = (addr: string): boolean => {
+    if (addr.startsWith('0x') && addr.length === 42) return true;
+    if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(addr)) return true;
+    if (/^(1|3|bc1)[a-zA-Z0-9]{25,42}$/.test(addr)) return true;
+    return false;
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!address.trim()) {
-      toast({
-        title: "Please enter an address or token.",
-        variant: "destructive",
-      });
+    
+    if (!address) {
+      toast.error('Please enter an address');
       return;
     }
-    setLoading(true);
-    await handleDetectBlockchain(address);
-    setLoading(false);
-
-    navigate(`/result?address=${encodeURIComponent(address.trim())}&chain=${selectedBlockchain}`);
+    
+    if (!validateAddress(address)) {
+      toast.error('Please enter a valid blockchain address');
+      return;
+    }
+    
+    onSubmit(address, network);
+    
+    navigate('/result', {
+      state: { address, network },
+      replace: true
+    });
   };
 
   return (
-    <form className="w-full flex flex-col items-center gap-3" onSubmit={handleSubmit}>
-      <div className="relative w-full max-w-xl flex items-center rounded-lg bg-background shadow-lg px-2 py-1 border border-muted">
-        {/* Blockchain chip */}
-        <span className="absolute -left-10 sm:left-2 top-1/2 -translate-y-1/2 z-10">
-          {
-            BLOCKCHAIN_OPTIONS.find(opt => opt.id === selectedBlockchain)?.icon
-              ? React.createElement(BLOCKCHAIN_OPTIONS.find(opt => opt.id === selectedBlockchain)!.icon)
-              : null
-          }
-        </span>
-        <input
-          className="pl-14 pr-4 py-3 w-full text-base rounded-lg focus:outline-none bg-transparent"
-          type="text"
-          placeholder="Paste wallet or token address (any chain)"
-          value={address}
-          onChange={handleInputChange}
-          autoCorrect="off"
-          spellCheck={false}
-          autoFocus
-          aria-label="Wallet or Token Address"
-          inputMode="text"
-        />
-        {/* Loading spinner on detection */}
-        <button
-          type="submit"
-          className="ml-2 text-primary hover:scale-105 transition-transform"
-          disabled={loading}
-          aria-label="Analyze"
-        >
-          {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : <Search className="w-6 h-6" />}
-        </button>
+    <form onSubmit={handleSubmit} className="max-w-4xl mx-auto mt-8">
+      <BlockchainSelector 
+        selectedNetwork={network}
+        onNetworkChange={handleNetworkChange}
+        disabled={isLoading}
+      />
+      
+      <div className="glowing-card p-2 rounded-xl">
+        <div className="flex flex-col md:flex-row gap-2">
+          <div className="relative flex-grow">
+            <Input
+              placeholder="Enter wallet or token address (0x...)"
+              value={address}
+              onChange={handleAddressChange}
+              className="pl-10 py-6 bg-transparent border-muted focus-visible:ring-neon-cyan"
+              disabled={isLoading}
+            />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          </div>
+          
+          <Button 
+            type="submit" 
+            className="bg-neon-cyan hover:bg-neon-cyan/80 py-6" 
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Analyzing...
+              </>
+            ) : (
+              <>Analyze</>
+            )}
+          </Button>
+        </div>
       </div>
-      {/* Optional: Show dropdown of detected blockchain for manual override (not required) */}
     </form>
   );
 };
 
 export default AddressInput;
-
