@@ -10,7 +10,7 @@ import {
   BitcoinIcon,
   L1XIcon,
   EthereumIcon,
-  BNBChainIcon,
+  // Remove BNBChainIcon import as we will use the image instead
   PolygonIcon,
   ArbitrumIcon,
   OptimismIcon,
@@ -21,11 +21,32 @@ import {
   ZkSyncIcon
 } from '@/components/icons';
 
+// Circular image component for BNB Chain
+const BnbChainCircleImage = () => (
+  <span
+    className="inline-block h-8 w-8 bg-white rounded-full flex items-center justify-center border border-yellow-400 shadow-sm"
+    style={{
+      backgroundColor: "#fff",
+    }}
+  >
+    <img
+      src="/lovable-uploads/acf3bbb7-7f0e-43ab-9891-2268f712ef65.png"
+      alt="BNB Chain"
+      className="rounded-full object-contain h-7 w-7"
+      style={{
+        backgroundColor: "transparent",
+      }}
+      draggable={false}
+    />
+  </span>
+);
+
 const BLOCKCHAINS = [
   { id: 'bitcoin', name: 'Bitcoin', icon: BitcoinIcon },
   { id: 'l1x', name: 'L1X', icon: L1XIcon },
   { id: 'ethereum', name: 'Ethereum', icon: EthereumIcon },
-  { id: 'binance', name: 'BNB Chain', icon: BNBChainIcon },
+  // Use the custom BnbChainCircleImage component for BNB Chain
+  { id: 'binance', name: 'BNB Chain', icon: BnbChainCircleImage },
   { id: 'polygon', name: 'Polygon', icon: PolygonIcon },
   { id: 'arbitrum', name: 'Arbitrum', icon: ArbitrumIcon },
   { id: 'optimism', name: 'Optimism', icon: OptimismIcon },
@@ -66,7 +87,7 @@ const BlockchainSelector: React.FC<{
               disabled && "opacity-50 cursor-not-allowed"
             )}
           >
-            <div className="h-5 w-5 flex items-center justify-center">
+            <div className="h-8 w-8 flex items-center justify-center">
               <Icon />
             </div>
             {blockchain.name}
@@ -160,3 +181,4 @@ const AddressInput: React.FC<AddressInputProps> = ({ onSubmit, isLoading }) => {
 };
 
 export default AddressInput;
+
