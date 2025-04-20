@@ -1,7 +1,8 @@
 
 import React, { useState } from 'react';
 import { Search, Loader2 } from 'lucide-react';
-import { detectBlockchain as localDetectBlockchain } from '../lib/detectBlockchain';
+import { useNavigate } from 'react-router-dom';
+import { detectBlockchain } from '../lib/detectBlockchain';
 import { toast } from '../components/ui/use-toast';
 
 import {
@@ -50,7 +51,6 @@ const BaseCircleImage = () => (
   </span>
 );
 
-// For quickly mapping chain symbols
 const BLOCKCHAIN_OPTIONS = [
   { id: 'bitcoin', name: 'Bitcoin', icon: BitcoinIcon },
   { id: 'l1x', name: 'L1X', icon: L1XIcon },
@@ -66,133 +66,35 @@ const BLOCKCHAIN_OPTIONS = [
   { id: 'zksync', name: 'zkSync', icon: ZkSyncIcon },
 ];
 
-interface AddressInputProps {
-  onSubmit?: (address: string, network: string) => void;
-  isLoading?: boolean;
-}
-
-// Simple explorers for address existence APIs (public endpoints for existence only)
-const explorerAPIs: Record<string, (a: string) => Promise<boolean>> = {
-  ethereum: async (address: string) => {
-    // Etherscan supports free API keys; for MVP just check via contract/txs endpoint
-    try {
-      const res = await fetch(`https://api.etherscan.io/api?module=account&action=txlist&address=${address}&startblock=0&endblock=1&sort=asc`);
-      const data = await res.json();
-      return !!(data && data.result && data.result.length >= 0); // address exists if there is a valid array
-    } catch {
-      return false;
-    }
-  },
-  binance: async (address: string) => {
-    // Try BSCScan, similar logic as above
-    try {
-      const res = await fetch(`https://api.bscscan.com/api?module=account&action=txlist&address=${address}&startblock=0&endblock=1&sort=asc`);
-      const data = await res.json();
-      return !!(data && data.result && data.result.length >= 0);
-    } catch {
-      return false;
-    }
-  },
-  polygon: async (address: string) => {
-    try {
-      const res = await fetch(`https://api.polygonscan.com/api?module=account&action=txlist&address=${address}&startblock=0&endblock=1&sort=asc`);
-      const data = await res.json();
-      return !!(data && data.result && data.result.length >= 0);
-    } catch {
-      return false;
-    }
-  },
-  arbitrum: async (address: string) => {
-    try {
-      const res = await fetch(`https://api.arbiscan.io/api?module=account&action=txlist&address=${address}&startblock=0&endblock=1&sort=asc`);
-      const data = await res.json();
-      return !!(data && data.result && data.result.length >= 0);
-    } catch {
-      return false;
-    }
-  },
-  optimism: async (address: string) => {
-    try {
-      const res = await fetch(`https://api-optimistic.etherscan.io/api?module=account&action=txlist&address=${address}&startblock=0&endblock=1&sort=asc`);
-      const data = await res.json();
-      return !!(data && data.result && data.result.length >= 0);
-    } catch {
-      return false;
-    }
-  },
-  solana: async (address: string) => {
-    try {
-      // Use Solscan public API for existence
-      const res = await fetch(`https://public-api.solscan.io/account/${address}`);
-      // If account exists, 200; otherwise error or 404
-      return res.ok;
-    } catch {
-      return false;
-    }
-  },
-};
-
-const AddressInput: React.FC<AddressInputProps> = ({ onSubmit, isLoading }) => {
+const AddressInput = () => {
   const [address, setAddress] = useState('');
   const [selectedBlockchain, setSelectedBlockchain] = useState('ethereum');
-  const [localLoading, setLocalLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-  // Heuristics THEN verify via explorers for best match
+  // New: Detect blockchain and update selected automatically
   const handleDetectBlockchain = async (input: string) => {
-    setLocalLoading(true);
+    setLoading(true);
     try {
-      // 1. Heuristic detection (fast)
-      const detection = localDetectBlockchain(input);
+      const detection = detectBlockchain(input);
 
-      let detectedId: string | null = detection.id;
-      let verifyNetworks: string[] = [];
+      if (detection.id && detection.id !== selectedBlockchain) {
+        setSelectedBlockchain(detection.id);
 
-      if (!detectedId) {
-        // If heuristics don't find it, test all
-        verifyNetworks = ['ethereum', 'binance', 'polygon', 'arbitrum', 'optimism', 'solana'];
-      } else {
-        verifyNetworks = [detectedId];
-        // If EVM type, also try BNB, Polygon for 0x; Solana check is unique by base58
-        if (detectedId === 'ethereum') {
-          verifyNetworks = ['ethereum', 'binance', 'polygon', 'arbitrum', 'optimism', 'avalanche', 'base', 'fantom', 'zksync'];
-        }
-      }
-
-      let finalChain: string | null = null;
-      // 2. Check via explorer APIs for confirmed existence (in order)
-      for (const network of verifyNetworks) {
-        if (explorerAPIs[network]) {
-          const has = await explorerAPIs[network](input);
-          if (has) {
-            finalChain = network;
-            break;
-          }
-        }
-      }
-
-      // If no API confirms, fallback to heuristic
-      if (!finalChain && detectedId) {
-        finalChain = detectedId;
-      }
-
-      if (finalChain && finalChain !== selectedBlockchain) {
-        setSelectedBlockchain(finalChain);
-
-        const foundName = BLOCKCHAIN_OPTIONS.find(opt => opt.id === finalChain)?.name || finalChain;
         toast({
-          title: `Detected: ${foundName}`,
-          description: `This address matches ${foundName}.`,
+          title: `Detected: ${detection.name}`,
+          description: `The address matches the ${detection.name} blockchain format.`,
           duration: 2300,
         });
-      } else if (!finalChain) {
+      } else if (!detection.id) {
         toast({
           title: "Unknown Blockchain",
-          description: "Unable to detect the blockchain using public lookup. Please check the address.",
+          description: "Unable to detect the blockchain from the input format.",
           variant: "destructive",
         });
       }
     } finally {
-      setLocalLoading(false);
+      setLoading(false);
     }
   };
 
@@ -200,13 +102,14 @@ const AddressInput: React.FC<AddressInputProps> = ({ onSubmit, isLoading }) => {
     const val = e.target.value;
     setAddress(val);
 
-    if (val.length > 8) {
+    if (val.length > 7) {
       handleDetectBlockchain(val);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!address.trim()) {
       toast({
         title: "Please enter an address or token.",
@@ -214,20 +117,12 @@ const AddressInput: React.FC<AddressInputProps> = ({ onSubmit, isLoading }) => {
       });
       return;
     }
-    if (onSubmit) {
-      onSubmit(address.trim(), selectedBlockchain);
-    } else {
-      // fallback toast if no submit handler
-      toast({
-        title: "No submit handler provided.",
-        description: "Please add an onSubmit to AddressInput.",
-        variant: "destructive",
-      });
-    }
-  };
+    setLoading(true);
+    await handleDetectBlockchain(address);
+    setLoading(false);
 
-  // Use parent loading if provided, else fall back to local detection loading
-  const loading = typeof isLoading === 'boolean' ? isLoading : localLoading;
+    navigate(`/result?address=${encodeURIComponent(address.trim())}&chain=${selectedBlockchain}`);
+  };
 
   return (
     <form className="w-full flex flex-col items-center gap-3" onSubmit={handleSubmit}>
@@ -262,7 +157,7 @@ const AddressInput: React.FC<AddressInputProps> = ({ onSubmit, isLoading }) => {
           {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : <Search className="w-6 h-6" />}
         </button>
       </div>
-      {/* Blockchain override dropdown could go here if needed */}
+      {/* Optional: Show dropdown of detected blockchain for manual override (not required) */}
     </form>
   );
 };
