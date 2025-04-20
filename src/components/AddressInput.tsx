@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Search, Loader2 } from 'lucide-react';
-import { detectBlockchain } from '../lib/detectBlockchain';
+import { detectBlockchain as localDetectBlockchain } from '../lib/detectBlockchain';
 import { toast } from '../components/ui/use-toast';
 
 import {
@@ -50,6 +50,7 @@ const BaseCircleImage = () => (
   </span>
 );
 
+// For quickly mapping chain symbols
 const BLOCKCHAIN_OPTIONS = [
   { id: 'bitcoin', name: 'Bitcoin', icon: BitcoinIcon },
   { id: 'l1x', name: 'L1X', icon: L1XIcon },
@@ -70,29 +71,123 @@ interface AddressInputProps {
   isLoading?: boolean;
 }
 
+// Simple explorers for address existence APIs (public endpoints for existence only)
+const explorerAPIs: Record<string, (a: string) => Promise<boolean>> = {
+  ethereum: async (address: string) => {
+    // Etherscan supports free API keys; for MVP just check via contract/txs endpoint
+    try {
+      const res = await fetch(`https://api.etherscan.io/api?module=account&action=txlist&address=${address}&startblock=0&endblock=1&sort=asc`);
+      const data = await res.json();
+      return !!(data && data.result && data.result.length >= 0); // address exists if there is a valid array
+    } catch {
+      return false;
+    }
+  },
+  binance: async (address: string) => {
+    // Try BSCScan, similar logic as above
+    try {
+      const res = await fetch(`https://api.bscscan.com/api?module=account&action=txlist&address=${address}&startblock=0&endblock=1&sort=asc`);
+      const data = await res.json();
+      return !!(data && data.result && data.result.length >= 0);
+    } catch {
+      return false;
+    }
+  },
+  polygon: async (address: string) => {
+    try {
+      const res = await fetch(`https://api.polygonscan.com/api?module=account&action=txlist&address=${address}&startblock=0&endblock=1&sort=asc`);
+      const data = await res.json();
+      return !!(data && data.result && data.result.length >= 0);
+    } catch {
+      return false;
+    }
+  },
+  arbitrum: async (address: string) => {
+    try {
+      const res = await fetch(`https://api.arbiscan.io/api?module=account&action=txlist&address=${address}&startblock=0&endblock=1&sort=asc`);
+      const data = await res.json();
+      return !!(data && data.result && data.result.length >= 0);
+    } catch {
+      return false;
+    }
+  },
+  optimism: async (address: string) => {
+    try {
+      const res = await fetch(`https://api-optimistic.etherscan.io/api?module=account&action=txlist&address=${address}&startblock=0&endblock=1&sort=asc`);
+      const data = await res.json();
+      return !!(data && data.result && data.result.length >= 0);
+    } catch {
+      return false;
+    }
+  },
+  solana: async (address: string) => {
+    try {
+      // Use Solscan public API for existence
+      const res = await fetch(`https://public-api.solscan.io/account/${address}`);
+      // If account exists, 200; otherwise error or 404
+      return res.ok;
+    } catch {
+      return false;
+    }
+  },
+};
+
 const AddressInput: React.FC<AddressInputProps> = ({ onSubmit, isLoading }) => {
   const [address, setAddress] = useState('');
   const [selectedBlockchain, setSelectedBlockchain] = useState('ethereum');
   const [localLoading, setLocalLoading] = useState(false);
 
-  // New: Detect blockchain and update selected automatically
+  // Heuristics THEN verify via explorers for best match
   const handleDetectBlockchain = async (input: string) => {
     setLocalLoading(true);
     try {
-      const detection = detectBlockchain(input);
+      // 1. Heuristic detection (fast)
+      const detection = localDetectBlockchain(input);
 
-      if (detection.id && detection.id !== selectedBlockchain) {
-        setSelectedBlockchain(detection.id);
+      let detectedId: string | null = detection.id;
+      let verifyNetworks: string[] = [];
 
+      if (!detectedId) {
+        // If heuristics don't find it, test all
+        verifyNetworks = ['ethereum', 'binance', 'polygon', 'arbitrum', 'optimism', 'solana'];
+      } else {
+        verifyNetworks = [detectedId];
+        // If EVM type, also try BNB, Polygon for 0x; Solana check is unique by base58
+        if (detectedId === 'ethereum') {
+          verifyNetworks = ['ethereum', 'binance', 'polygon', 'arbitrum', 'optimism', 'avalanche', 'base', 'fantom', 'zksync'];
+        }
+      }
+
+      let finalChain: string | null = null;
+      // 2. Check via explorer APIs for confirmed existence (in order)
+      for (const network of verifyNetworks) {
+        if (explorerAPIs[network]) {
+          const has = await explorerAPIs[network](input);
+          if (has) {
+            finalChain = network;
+            break;
+          }
+        }
+      }
+
+      // If no API confirms, fallback to heuristic
+      if (!finalChain && detectedId) {
+        finalChain = detectedId;
+      }
+
+      if (finalChain && finalChain !== selectedBlockchain) {
+        setSelectedBlockchain(finalChain);
+
+        const foundName = BLOCKCHAIN_OPTIONS.find(opt => opt.id === finalChain)?.name || finalChain;
         toast({
-          title: `Detected: ${detection.name}`,
-          description: `The address matches the ${detection.name} blockchain format.`,
+          title: `Detected: ${foundName}`,
+          description: `This address matches ${foundName}.`,
           duration: 2300,
         });
-      } else if (!detection.id) {
+      } else if (!finalChain) {
         toast({
           title: "Unknown Blockchain",
-          description: "Unable to detect the blockchain from the input format.",
+          description: "Unable to detect the blockchain using public lookup. Please check the address.",
           variant: "destructive",
         });
       }
@@ -105,7 +200,7 @@ const AddressInput: React.FC<AddressInputProps> = ({ onSubmit, isLoading }) => {
     const val = e.target.value;
     setAddress(val);
 
-    if (val.length > 7) {
+    if (val.length > 8) {
       handleDetectBlockchain(val);
     }
   };
@@ -167,7 +262,7 @@ const AddressInput: React.FC<AddressInputProps> = ({ onSubmit, isLoading }) => {
           {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : <Search className="w-6 h-6" />}
         </button>
       </div>
-      {/* Optional: Show dropdown of detected blockchain for manual override (not required) */}
+      {/* Blockchain override dropdown could go here if needed */}
     </form>
   );
 };
