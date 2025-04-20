@@ -1,11 +1,12 @@
 
 import React, { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AnalysisReport from '@/components/AnalysisReport';
 import TokenContractAnalysis from '@/components/TokenContractAnalysis';
 import LoadingAnimation from '@/components/LoadingAnimation';
+import ResultTabs from '@/components/ResultTabs';
 import { toast } from 'sonner';
 import { analyzeEthereumToken } from '@/lib/api-client';
 
@@ -43,12 +44,19 @@ interface TokenData {
 const Result = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { address, network } = location.state || {};
+  const [searchParams] = useSearchParams();
+  const addressFromParams = searchParams.get('address');
+  const networkFromParams = searchParams.get('network');
+  
+  // Get address and network from state or URL params
+  const { address = addressFromParams, network = networkFromParams || 'ethereum' } = location.state || {};
+  
   const [isLoading, setIsLoading] = useState(true);
   const [analysisData, setAnalysisData] = useState<any>(null);
   const [tokenData, setTokenData] = useState<TokenData | null>(null);
   const [contractAnalysis, setContractAnalysis] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showVisualReport, setShowVisualReport] = useState(false);
 
   useEffect(() => {
     if (!address) {
@@ -362,14 +370,25 @@ const Result = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
-        <Button
-          variant="ghost"
-          className="mb-6 text-muted-foreground hover:text-foreground"
-          onClick={() => navigate('/')}
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Search
-        </Button>
+        <div className="flex justify-between items-center mb-6">
+          <Button
+            variant="ghost"
+            className="text-muted-foreground hover:text-foreground"
+            onClick={() => navigate('/')}
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Search
+          </Button>
+          
+          {!isLoading && analysisData && (
+            <Button
+              variant="outline"
+              onClick={() => setShowVisualReport(!showVisualReport)}
+            >
+              {showVisualReport ? "Show Tabbed Report" : "Show Visual Report"}
+            </Button>
+          )}
+        </div>
 
         <div className="space-y-6">
           <div className="flex items-center justify-between">
@@ -402,24 +421,30 @@ const Result = () => {
             </div>
           ) : (
             <>
-              {analysisData && (
-                <AnalysisReport 
-                  address={address}
-                  network={network || 'ethereum'}
-                  scores={analysisData.scores}
-                  analysis={analysisData.analysis}
-                  timestamp={analysisData.timestamp}
+              {showVisualReport ? (
+                // Visual report
+                <>
+                  {analysisData && (
+                    <AnalysisReport 
+                      address={address}
+                      network={network || 'ethereum'}
+                      scores={analysisData.scores}
+                      analysis={analysisData.analysis}
+                      timestamp={analysisData.timestamp}
+                      tokenData={tokenData}
+                      scamIndicators={analysisData.scamIndicators}
+                    />
+                  )}
+                </>
+              ) : (
+                // Tabbed report
+                <ResultTabs 
+                  contractAnalysis={contractAnalysis}
+                  analysisData={analysisData}
                   tokenData={tokenData}
-                  scamIndicators={analysisData.scamIndicators}
+                  address={address}
+                  network={network}
                 />
-              )}
-              
-              {/* Display our enhanced TokenContractAnalysis for Ethereum tokens */}
-              {contractAnalysis && network === 'ethereum' && (
-                <div className="mt-8">
-                  <h2 className="text-2xl font-bold mb-6">Advanced Contract Analysis</h2>
-                  <TokenContractAnalysis tokenData={contractAnalysis} />
-                </div>
               )}
             </>
           )}

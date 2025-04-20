@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { TrendingUp, Clock, Award, ArrowRight, AlertTriangle, CheckCircle, Shield } from 'lucide-react';
+import { TrendingUp, Clock, Award, ArrowRight, AlertTriangle, CheckCircle, Shield, BarChart2, AlertCircle } from 'lucide-react';
 
 interface TokenEntry {
   address: string;
@@ -56,7 +56,7 @@ const TokenStats: React.FC<TokenStatsProps> = ({ trendingTokens, trustedTokens, 
       case 'High Risk':
         return (
           <Badge className="bg-red-500/20 text-red-500">
-            <AlertTriangle className="h-3 w-3 mr-1" />
+            <AlertCircle className="h-3 w-3 mr-1" />
             Risky
           </Badge>
         );
@@ -68,7 +68,7 @@ const TokenStats: React.FC<TokenStatsProps> = ({ trendingTokens, trustedTokens, 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
       {/* Trending Tokens */}
-      <Card className="glass-card border-neon-pink">
+      <Card className="glass-card border-neon-pink shadow-lg hover:shadow-xl transition-shadow duration-300">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-neon-pink" />
@@ -82,7 +82,7 @@ const TokenStats: React.FC<TokenStatsProps> = ({ trendingTokens, trustedTokens, 
           <div className="space-y-3">
             {trendingTokens.length > 0 ? (
               trendingTokens.map((token, index) => (
-                <div key={index} className="flex items-center justify-between p-2 bg-muted/30 rounded-md">
+                <div key={index} className="flex items-center justify-between p-2 bg-muted/30 rounded-md hover:bg-muted/40 transition-colors">
                   <div>
                     <div className="font-medium flex items-center gap-2">
                       {token.symbol}
@@ -92,7 +92,7 @@ const TokenStats: React.FC<TokenStatsProps> = ({ trendingTokens, trustedTokens, 
                       {formatAddress(token.address)}
                     </div>
                   </div>
-                  <Link to={`/?address=${token.address}&network=${token.network}`}>
+                  <Link to={`/result?address=${token.address}&network=${token.network}`}>
                     <Button variant="ghost" size="icon" className="h-7 w-7">
                       <ArrowRight className="h-4 w-4" />
                     </Button>
@@ -100,14 +100,15 @@ const TokenStats: React.FC<TokenStatsProps> = ({ trendingTokens, trustedTokens, 
                 </div>
               ))
             ) : (
-              <p className="text-center text-muted-foreground text-sm">No trending tokens yet</p>
+              <p className="text-center text-muted-foreground text-sm py-2">No trending tokens yet</p>
             )}
           </div>
+          <Button variant="ghost" className="w-full mt-3 text-xs">View all trending tokens</Button>
         </CardContent>
       </Card>
 
       {/* Top Trusted Tokens */}
-      <Card className="glass-card border-neon-cyan">
+      <Card className="glass-card border-neon-cyan shadow-lg hover:shadow-xl transition-shadow duration-300">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Award className="h-5 w-5 text-neon-cyan" />
@@ -121,7 +122,7 @@ const TokenStats: React.FC<TokenStatsProps> = ({ trendingTokens, trustedTokens, 
           <div className="space-y-3">
             {trustedTokens.length > 0 ? (
               trustedTokens.map((token, index) => (
-                <div key={index} className="flex items-center justify-between p-2 bg-muted/30 rounded-md">
+                <div key={index} className="flex items-center justify-between p-2 bg-muted/30 rounded-md hover:bg-muted/40 transition-colors">
                   <div>
                     <div className="font-medium flex items-center gap-2">
                       {token.symbol}
@@ -134,7 +135,7 @@ const TokenStats: React.FC<TokenStatsProps> = ({ trendingTokens, trustedTokens, 
                       {formatAddress(token.address)}
                     </div>
                   </div>
-                  <Link to={`/?address=${token.address}&network=${token.network}`}>
+                  <Link to={`/result?address=${token.address}&network=${token.network}`}>
                     <Button variant="ghost" size="icon" className="h-7 w-7">
                       <ArrowRight className="h-4 w-4" />
                     </Button>
@@ -142,14 +143,15 @@ const TokenStats: React.FC<TokenStatsProps> = ({ trendingTokens, trustedTokens, 
                 </div>
               ))
             ) : (
-              <p className="text-center text-muted-foreground text-sm">No trusted tokens yet</p>
+              <p className="text-center text-muted-foreground text-sm py-2">No trusted tokens yet</p>
             )}
           </div>
+          <Button variant="ghost" className="w-full mt-3 text-xs">View all trusted tokens</Button>
         </CardContent>
       </Card>
 
       {/* Recently Analyzed Tokens */}
-      <Card className="glass-card border-neon-purple">
+      <Card className="glass-card border-neon-purple shadow-lg hover:shadow-xl transition-shadow duration-300">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5 text-neon-purple" />
@@ -163,7 +165,7 @@ const TokenStats: React.FC<TokenStatsProps> = ({ trendingTokens, trustedTokens, 
           <div className="space-y-3">
             {recentTokens.length > 0 ? (
               recentTokens.map((token, index) => (
-                <div key={index} className="flex items-center justify-between p-2 bg-muted/30 rounded-md">
+                <div key={index} className="flex items-center justify-between p-2 bg-muted/30 rounded-md hover:bg-muted/40 transition-colors">
                   <div>
                     <div className="font-medium flex items-center gap-2">
                       {token.symbol}
@@ -173,7 +175,7 @@ const TokenStats: React.FC<TokenStatsProps> = ({ trendingTokens, trustedTokens, 
                       {formatTime(token.timestamp)}
                     </div>
                   </div>
-                  <Link to={`/?address=${token.address}&network=${token.network}`}>
+                  <Link to={`/result?address=${token.address}&network=${token.network}`}>
                     <Button variant="ghost" size="icon" className="h-7 w-7">
                       <ArrowRight className="h-4 w-4" />
                     </Button>
@@ -181,9 +183,10 @@ const TokenStats: React.FC<TokenStatsProps> = ({ trendingTokens, trustedTokens, 
                 </div>
               ))
             ) : (
-              <p className="text-center text-muted-foreground text-sm">No recent analyses yet</p>
+              <p className="text-center text-muted-foreground text-sm py-2">No recent analyses yet</p>
             )}
           </div>
+          <Button variant="ghost" className="w-full mt-3 text-xs">View all recent analyses</Button>
         </CardContent>
       </Card>
     </div>
