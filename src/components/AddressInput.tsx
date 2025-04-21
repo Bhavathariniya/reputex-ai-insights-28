@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+
+import React, { useState } from 'react';
 import { Search, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -17,45 +18,11 @@ import {
   FantomIcon,
   ZkSyncIcon
 } from '@/components/icons';
-import { detectBlockchain } from '@/lib/chain-detection';
+import BNBChainIcon from './icons/BNBChainIcon';
+import BaseCircleImage from './icons/BaseIcon';
 
-const BnbChainCircleImage = () => (
-  <span
-    className="inline-block h-8 w-8 bg-white rounded-full flex items-center justify-center border border-yellow-400 shadow-sm"
-    style={{
-      backgroundColor: "#fff",
-    }}
-  >
-    <img
-      src="/lovable-uploads/acf3bbb7-7f0e-43ab-9891-2268f712ef65.png"
-      alt="BNB Chain"
-      className="rounded-full object-contain h-7 w-7"
-      style={{
-        backgroundColor: "transparent",
-      }}
-      draggable={false}
-    />
-  </span>
-);
-
-const BaseCircleImage = () => (
-  <span
-    className="inline-block h-8 w-8 bg-white rounded-full flex items-center justify-center border border-[#0052FF] shadow-sm"
-    style={{
-      backgroundColor: "#fff",
-    }}
-  >
-    <img
-      src="/lovable-uploads/20b1e6be-88d4-4b75-85a5-0a5a1aa7727e.png"
-      alt="Base"
-      className="rounded-full object-contain h-7 w-7"
-      style={{
-        backgroundColor: "transparent",
-      }}
-      draggable={false}
-    />
-  </span>
-);
+const BnbChainCircleImage = BNBChainIcon;
+const BaseIcon = BaseCircleImage;
 
 const BLOCKCHAINS = [
   { id: 'bitcoin', name: 'Bitcoin', icon: BitcoinIcon },
@@ -68,7 +35,7 @@ const BLOCKCHAINS = [
   { id: 'solana', name: 'Solana', icon: SolanaIcon },
   { id: 'avalanche', name: 'Avalanche', icon: AvalancheIcon },
   { id: 'fantom', name: 'Fantom', icon: FantomIcon },
-  { id: 'base', name: 'Base', icon: BaseCircleImage },
+  { id: 'base', name: 'Base', icon: BaseIcon },
   { id: 'zksync', name: 'zkSync', icon: ZkSyncIcon },
 ];
 
@@ -113,50 +80,20 @@ const BlockchainSelector: React.FC<{
   );
 };
 
-function detectBlockchainHeuristics(address: string): string | null {
-  if (!address || address.length < 10) return null;
-  if (/^(0x)[0-9a-fA-F]{40}$/.test(address)) return 'ethereum'; // EVM-style (needs more checks)
-  if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address)) return 'solana';
-  if (/^(1|3|bc1)[a-zA-Z0-9]{25,42}$/.test(address)) return 'bitcoin';
-  // Add more heuristics as needed. Could check for BNB, Tron, etc.
-  return null;
-}
-
 const AddressInput: React.FC<AddressInputProps> = ({ onSubmit, isLoading }) => {
   const [address, setAddress] = useState('');
   const [network, setNetwork] = useState('ethereum');
-  const [hasManuallySelected, setHasManuallySelected] = useState(false);
   const navigate = useNavigate();
-  const lastAsyncDetectionRef = useRef<number>(0);
 
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Only set address, no auto detection of network anymore
     const addr = e.target.value.trim();
     setAddress(addr);
-
-    if (!hasManuallySelected) {
-      const heuristicDetected = detectBlockchainHeuristics(addr);
-      if (heuristicDetected && heuristicDetected !== network) {
-        setNetwork(heuristicDetected);
-      }
-      const thisDetection = Date.now();
-      lastAsyncDetectionRef.current = thisDetection;
-      detectBlockchain(addr).then((asyncDetected) => {
-        if (lastAsyncDetectionRef.current !== thisDetection) return;
-        if (asyncDetected && !hasManuallySelected && asyncDetected !== network) {
-          setNetwork(asyncDetected);
-        }
-      }).catch(() => {});
-    }
   };
 
   const handleNetworkChange = (value: string) => {
-    setHasManuallySelected(true);
     setNetwork(value);
   };
-
-  React.useEffect(() => {
-    if (!address) setHasManuallySelected(false);
-  }, [address]);
 
   const validateAddress = (addr: string): boolean => {
     if (addr.startsWith('0x') && addr.length === 42) return true;
@@ -230,3 +167,4 @@ const AddressInput: React.FC<AddressInputProps> = ({ onSubmit, isLoading }) => {
 };
 
 export default AddressInput;
+
