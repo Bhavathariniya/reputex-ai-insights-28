@@ -3,9 +3,9 @@ import React from 'react';
 
 const BNBChainIcon = ({ className }: { className?: string }) => {
   return (
-    <div className={`relative w-6 h-6 rounded-full overflow-hidden bg-black flex items-center justify-center ${className || ''}`}>
+    <div className={`relative w-6 h-6 rounded-full overflow-hidden flex items-center justify-center ${className || ''}`}>
       <img
-        src="/lovable-uploads/6b65bd10-fbde-4763-974e-cea4a876890a.png"
+        src="/lovable-uploads/5a975098-c4a6-4ea3-bbc6-1d8f71741791.png"
         alt="BNB Chain Logo"
         className="w-full h-full object-contain"
         draggable={false}
