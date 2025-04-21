@@ -1,6 +1,7 @@
 
 // Chain detection utility
 // This utility helps identify which blockchain an address belongs to
+import axios from 'axios';
 
 // Define address patterns for different blockchains
 const ADDRESS_PATTERNS = {
@@ -11,13 +12,74 @@ const ADDRESS_PATTERNS = {
   // need additional logic for distinguishing them
 };
 
+// Etherscan API key (for supported EVM networks)
+const ETHERSCAN_API_KEY = 'VZFDUWB3YGQ1YCDKTCU1D6DDSS';
+
+// Explorer API endpoints for checking activity
+const EXPLORER_APIS = {
+  ethereum: {
+    url: 'https://api.etherscan.io/api',
+    apiKey: ETHERSCAN_API_KEY,
+    module: 'account',
+    action: 'txlist'
+  },
+  binance: {
+    url: 'https://api.bscscan.com/api',
+    apiKey: ETHERSCAN_API_KEY,
+    module: 'account',
+    action: 'txlist'
+  },
+  polygon: {
+    url: 'https://api.polygonscan.com/api',
+    apiKey: ETHERSCAN_API_KEY,
+    module: 'account',
+    action: 'txlist'
+  },
+  arbitrum: {
+    url: 'https://api.arbiscan.io/api',
+    apiKey: ETHERSCAN_API_KEY,
+    module: 'account',
+    action: 'txlist'
+  },
+  optimism: {
+    url: 'https://api-optimistic.etherscan.io/api',
+    apiKey: ETHERSCAN_API_KEY,
+    module: 'account',
+    action: 'txlist'
+  },
+  avalanche: {
+    url: 'https://api.snowtrace.io/api',
+    apiKey: ETHERSCAN_API_KEY,
+    module: 'account',
+    action: 'txlist'
+  },
+  fantom: {
+    url: 'https://api.ftmscan.com/api',
+    apiKey: ETHERSCAN_API_KEY,
+    module: 'account',
+    action: 'txlist'
+  },
+  base: {
+    url: 'https://api.basescan.org/api',
+    apiKey: ETHERSCAN_API_KEY,
+    module: 'account',
+    action: 'txlist'
+  },
+  zksync: {
+    url: 'https://api-zksync-era.etherscan.io/api',
+    apiKey: ETHERSCAN_API_KEY,
+    module: 'account',
+    action: 'txlist'
+  }
+};
+
 /**
- * Detects which blockchain an address likely belongs to
+ * Detects which blockchain an address likely belongs to by checking actual on-chain activity
  * @param address The address to check
  * @returns The blockchain identifier or null if detection fails
  */
 export async function detectBlockchain(address: string): Promise<string | null> {
-  // Check for basic patterns first
+  // First check for basic patterns
   if (ADDRESS_PATTERNS.bitcoin.test(address)) {
     return 'bitcoin';
   }
@@ -27,39 +89,75 @@ export async function detectBlockchain(address: string): Promise<string | null> 
   }
   
   if (ADDRESS_PATTERNS.ethereum.test(address)) {
-    // For EVM-compatible chains, we need to check activity on each chain
-    // In a real implementation, this would query multiple chain explorers
-    // For this MVP, we'll randomly select one of the EVM chains
-    
+    // For EVM-compatible chains, check activity on each chain
     try {
-      // Simulate API check with blockchain explorers
-      // In a real implementation, this would make parallel API calls to different
-      // explorer APIs to check where the address has activity
-      
-      // Randomly pick one for demonstration purposes
-      // In real implementation, this would be based on actual chain activity
-      const evmChains = ['ethereum', 'binance', 'polygon', 'arbitrum', 'optimism', 'avalanche', 'fantom', 'base', 'zksync', 'l1x'];
-      
-      // For demo purposes, let's add some bias toward more popular chains
-      const weights = [0.2, 0.15, 0.15, 0.1, 0.1, 0.08, 0.08, 0.07, 0.05, 0.02];
-      
-      // Weighted random selection
-      const random = Math.random();
-      let sum = 0;
-      let selectedChain = evmChains[0];
-      
-      for (let i = 0; i < weights.length; i++) {
-        sum += weights[i];
-        if (random <= sum) {
-          selectedChain = evmChains[i];
-          break;
+      // Check all EVM chains in parallel
+      const evmChains = Object.keys(EXPLORER_APIS);
+      const chainCheckPromises = evmChains.map(async (chain) => {
+        const api = EXPLORER_APIS[chain as keyof typeof EXPLORER_APIS];
+        if (!api) return { chain, txCount: 0 };
+        
+        try {
+          const response = await axios.get(api.url, {
+            params: {
+              module: api.module,
+              action: api.action,
+              address: address,
+              startblock: 0,
+              endblock: 99999999,
+              page: 1,
+              offset: 10, // We only need to check if transactions exist
+              sort: 'desc',
+              apikey: api.apiKey
+            },
+            timeout: 3000 // Set a timeout to avoid long waiting times
+          });
+          
+          // Check if we got a valid response with transactions
+          if (response.data && 
+              response.data.status === '1' && 
+              response.data.result && 
+              Array.isArray(response.data.result)) {
+            return { 
+              chain, 
+              txCount: response.data.result.length,
+              // If we have full response with transactions, this is likely the right chain
+              isValid: response.data.result.length > 0
+            };
+          }
+          
+          return { chain, txCount: 0, isValid: false };
+        } catch (error) {
+          console.error(`Error checking ${chain} for address ${address}:`, error);
+          return { chain, txCount: 0, isValid: false };
         }
+      });
+      
+      // Wait for all promises to resolve
+      const results = await Promise.allSettled(chainCheckPromises);
+      
+      // Filter for successful calls and valid chains
+      const validChains = results
+        .filter((result) => 
+          result.status === 'fulfilled' && result.value.isValid === true)
+        .map((result) => {
+          // We know these are fulfilled results based on the filter
+          const fulfilledResult = result as PromiseFulfilledResult<{ chain: string, txCount: number, isValid?: boolean }>;
+          return { 
+            chain: fulfilledResult.value.chain, 
+            txCount: fulfilledResult.value.txCount 
+          };
+        });
+      
+      // If we found any valid chains, return the one with the most transactions
+      if (validChains.length > 0) {
+        // Sort by transaction count (highest first)
+        validChains.sort((a, b) => b.txCount - a.txCount);
+        return validChains[0].chain;
       }
       
-      // Simulate a network delay for realism
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      return selectedChain;
+      // Fallback to Ethereum if no activity found on any chain (most common)
+      return 'ethereum';
     } catch (error) {
       console.error("Error detecting EVM chain:", error);
       // Default to Ethereum if we can't determine

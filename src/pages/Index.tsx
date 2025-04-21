@@ -38,7 +38,7 @@ const Index = () => {
   useEffect(() => {
     const query = new URLSearchParams(location.search);
     const addressParam = query.get('address');
-    const networkParam = query.get('network') || 'ethereum';
+    const networkParam = query.get('network') || 'auto';
     
     if (addressParam) {
       setSearchedAddress(addressParam);
@@ -50,7 +50,7 @@ const Index = () => {
   const autoDetectNetwork = async (address: string): Promise<string> => {
     setIsAutoDetecting(true);
     try {
-      toast.info("Detecting blockchain network...");
+      toast.info("Auto-detecting blockchain network...");
       const detectedNetwork = await detectBlockchain(address);
       if (detectedNetwork) {
         toast.success(`Detected network: ${detectedNetwork}`);
@@ -221,11 +221,19 @@ const Index = () => {
     }
   };
 
-  const handleSubmit = (address: string, network: string) => {
+  const handleSubmit = async (address: string, network: string) => {
     setSearchedAddress(address);
-    setSearchedNetwork(network);
+    
+    // Auto-detect network if requested
+    let resolvedNetwork = network;
+    if (network === 'auto') {
+      resolvedNetwork = await autoDetectNetwork(address);
+    }
+    
+    setSearchedNetwork(resolvedNetwork);
+    
     // Update URL with the address and network parameters
-    navigate(`/?address=${address}&network=${network}`);
+    navigate(`/?address=${address}&network=${resolvedNetwork}`);
   };
 
   const toggleAudio = () => {

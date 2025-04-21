@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Search, Loader2 } from 'lucide-react';
+import { Search, Loader2, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,6 +25,7 @@ const BnbChainCircleImage = BNBChainIcon;
 const BaseIcon = BaseCircleImage;
 
 const BLOCKCHAINS = [
+  { id: 'auto', name: 'Auto Detect', icon: Zap }, // Added auto detect option with Zap icon
   { id: 'bitcoin', name: 'Bitcoin', icon: BitcoinIcon },
   { id: 'l1x', name: 'L1X', icon: L1XIcon },
   { id: 'ethereum', name: 'Ethereum', icon: EthereumIcon },
@@ -82,11 +83,10 @@ const BlockchainSelector: React.FC<{
 
 const AddressInput: React.FC<AddressInputProps> = ({ onSubmit, isLoading }) => {
   const [address, setAddress] = useState('');
-  const [network, setNetwork] = useState('ethereum');
+  const [network, setNetwork] = useState('auto'); // Set auto as default for network detection
   const navigate = useNavigate();
 
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Only set address, no auto detection of network anymore
     const addr = e.target.value.trim();
     setAddress(addr);
   };
@@ -131,6 +131,8 @@ const AddressInput: React.FC<AddressInputProps> = ({ onSubmit, isLoading }) => {
         disabled={isLoading}
       />
 
+      {/* Auto-detection is now handled by the network selector */}
+      
       <div className="glowing-card p-2 rounded-xl">
         <div className="flex flex-col md:flex-row gap-2">
           <div className="relative flex-grow">
