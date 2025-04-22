@@ -57,8 +57,11 @@ export async function getTokenMetadata(address: string): Promise<TokenMetadata> 
   try {
     const metadata = await alchemy.core.getTokenMetadata(address);
     
-    // Get token balance to estimate total supply
-    const balance = await alchemy.core.getTokenBalance(address, address);
+    // For total supply, we need to use getTokenBalances instead of getTokenBalance (which doesn't exist)
+    // We'll get token balances for this token address from a major holder or the token contract itself
+    // Note: This is a simplified approach as total supply would typically come from the contract directly
+    const balances = await alchemy.core.getTokenBalances(address, [address]);
+    const balance = balances.tokenBalances[0]?.tokenBalance || '0';
     
     return {
       name: metadata.name || 'Unknown Token',
