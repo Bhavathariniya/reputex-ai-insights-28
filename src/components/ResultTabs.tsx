@@ -1,4 +1,3 @@
-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEffect, useState } from "react";
@@ -20,6 +19,19 @@ import TokenStats, { TokenStatsProps } from "./TokenStats";
 import AnalysisReport from "./AnalysisReport";
 import LoadingAnimation from "./LoadingAnimation";
 
+interface TokenData {
+  tokenName: string;
+  tokenSymbol: string;
+  totalSupply: string;
+  holderCount: number;
+  isLiquidityLocked: boolean;
+  decimals: number;
+  creationTime?: string;
+  contractCreator?: string;
+  isVerified: boolean;
+  compilerVersion?: string;
+}
+
 const ResultTabs = () => {
   const { address } = useParams<{ address: string }>();
   const [isLoading, setIsLoading] = useState(false);
@@ -34,16 +46,12 @@ const ResultTabs = () => {
       
       setIsLoading(true);
       try {
-        // Try to detect if the address is a token contract
         if (address.startsWith('0x') && address.length === 42) {
-          // Fetch token info from CoinGecko
-          // Default to Ethereum network, but in a full implementation we would detect the network
           const info = await getTokenInfo('eth', address);
           
           if (info) {
             setTokenInfo(info);
             
-            // Generate trust analysis
             const analysis = await analyzeTrustScore(info);
             setAnalysisResult(analysis);
           }
@@ -71,7 +79,6 @@ const ResultTabs = () => {
     );
   }
 
-  // Mock data for token stats
   const mockTokenStats: TokenStatsProps = {
     address: address,
     trendingTokens: [
@@ -116,7 +123,6 @@ const ResultTabs = () => {
     ]
   };
 
-  // Mock data for token contract analysis
   const mockContractData = {
     tokenOverview: {
       name: tokenInfo?.name || "Unknown Token",
@@ -157,6 +163,16 @@ const ResultTabs = () => {
     },
     scamPatternMatch: "This token does not match known scam patterns.",
     timestamp: new Date().toISOString()
+  };
+
+  const tokenData: TokenData = {
+    tokenName: tokenInfo?.name || "Unknown Token",
+    tokenSymbol: tokenInfo?.symbol || "???",
+    totalSupply: "1000000000000000000000000",
+    holderCount: 500,
+    isLiquidityLocked: true,
+    decimals: 18,
+    isVerified: true
   };
 
   return (
@@ -229,11 +245,11 @@ const ResultTabs = () => {
           </TabsContent>
 
           <TabsContent value="transactions">
-            <TokenAnalysis address={address || ""} network={network} />
+            <TokenAnalysis address={address || ""} network={network} tokenData={tokenData} />
           </TabsContent>
 
           <TabsContent value="contract">
-            <TokenContractAnalysis address={address} tokenData={mockContractData} />
+            <TokenContractAnalysis address={address || ""} tokenData={mockContractData} />
           </TabsContent>
 
           <TabsContent value="stats">
