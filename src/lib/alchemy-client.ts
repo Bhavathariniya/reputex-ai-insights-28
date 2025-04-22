@@ -1,4 +1,3 @@
-
 import { Alchemy, Network } from 'alchemy-sdk';
 
 const ALCHEMY_CONFIG = {
@@ -31,6 +30,37 @@ interface TokenAnalysisResult {
   trustScore: number;
   analysis: string;
   riskFactors: string[];
+}
+
+interface CoinGeckoTokenData {
+  id: string;
+  attributes: {
+    name: string;
+    symbol: string;
+    image_url: string;
+    decimals: number;
+    total_supply: string;
+    price_usd: string;
+    fdv_usd: string;
+    total_reserve_in_usd: string;
+    volume_usd: {
+      h24: string;
+    };
+    market_cap_usd: string;
+  };
+  relationships: {
+    top_pools: {
+      data: Array<{
+        id: string;
+        type: string;
+      }>;
+    };
+  };
+}
+
+interface CoinGeckoResponse {
+  data: CoinGeckoTokenData;
+  included?: Array<any>;
 }
 
 export async function getAddressBalance(address: string, network: string): Promise<string> {
@@ -96,21 +126,46 @@ export async function getTokenAllowance(
   }
 }
 
+async function getCoinGeckoTokenData(address: string, network: string = 'eth'): Promise<CoinGeckoResponse | null> {
+  try {
+    const response = await fetch(
+      `https://pro-api.coingecko.com/api/v3/onchain/networks/${network}/tokens/multi/${address}`,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-cg-pro-api-key': 'CG-LggZcVpfVpN9wDLpAsMoy7Yr'
+        }
+      }
+    );
+
+    if (!response.ok) {
+      console.warn('CoinGecko API request failed:', await response.text());
+      return null;
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching CoinGecko data:', error);
+    return null;
+  }
+}
+
 export async function getTokenMetadata(address: string): Promise<TokenMetadata> {
   try {
-    const metadata = await alchemy.core.getTokenMetadata(address);
+    const [alchemyMetadata, geckoData] = await Promise.all([
+      alchemy.core.getTokenMetadata(address),
+      getCoinGeckoTokenData(address)
+    ]);
     
-    // For total supply, we need to use getTokenBalances instead of getTokenBalance
-    // We'll get token balances for this token address from a major holder or the token contract itself
     const balances = await alchemy.core.getTokenBalances(address, [address]);
     const balance = balances.tokenBalances[0]?.tokenBalance || '0';
     
     return {
-      name: metadata.name || 'Unknown Token',
-      symbol: metadata.symbol || 'UNKNOWN',
-      totalSupply: balance.toString(),
-      decimals: metadata.decimals || 18,
-      logo: metadata.logo || undefined
+      name: alchemyMetadata.name || geckoData?.data?.attributes?.name || 'Unknown Token',
+      symbol: alchemyMetadata.symbol || geckoData?.data?.attributes?.symbol || 'UNKNOWN',
+      totalSupply: geckoData?.data?.attributes?.total_supply || balance.toString(),
+      decimals: alchemyMetadata.decimals || geckoData?.data?.attributes?.decimals || 18,
+      logo: alchemyMetadata.logo || geckoData?.data?.attributes?.image_url || undefined
     };
   } catch (error) {
     console.error('Error fetching token metadata:', error);
