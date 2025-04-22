@@ -1,3 +1,4 @@
+
 import { Alchemy, Network } from 'alchemy-sdk';
 
 const ALCHEMY_CONFIG = {
@@ -80,12 +81,15 @@ export async function getTokenAllowance(
   spenderAddress: string
 ): Promise<string> {
   try {
-    const allowance = await alchemy.core.getTokenAllowance({
-      contract: contractAddress,
-      owner: ownerAddress,
+    // Use core.getTokenBalances method with a specific configuration
+    const allowance = await alchemy.core.getTokenBalances(ownerAddress, [contractAddress], {
+      type: 'allowance',
       spender: spenderAddress
     });
-    return allowance.toString();
+
+    // Extract the first token's balance (which represents the allowance)
+    const tokenAllowance = allowance.tokenBalances[0]?.tokenBalance || '0';
+    return tokenAllowance;
   } catch (error) {
     console.error('Error fetching token allowance:', error);
     throw error;
