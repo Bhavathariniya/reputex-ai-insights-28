@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -16,13 +15,19 @@ interface TokenEntry {
   timestamp: string;
 }
 
-interface TokenStatsProps {
-  trendingTokens: TokenEntry[];
-  trustedTokens: TokenEntry[];
-  recentTokens: TokenEntry[];
+export interface TokenStatsProps {
+  address?: string;
+  trendingTokens?: TokenEntry[];
+  trustedTokens?: TokenEntry[];
+  recentTokens?: TokenEntry[];
 }
 
-const TokenStats: React.FC<TokenStatsProps> = ({ trendingTokens, trustedTokens, recentTokens }) => {
+const TokenStats: React.FC<TokenStatsProps> = ({ 
+  address,
+  trendingTokens = [], 
+  trustedTokens = [], 
+  recentTokens = [] 
+}) => {
   // Helper to format addresses
   const formatAddress = (address: string) => {
     return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
@@ -64,6 +69,23 @@ const TokenStats: React.FC<TokenStatsProps> = ({ trendingTokens, trustedTokens, 
         return null;
     }
   };
+
+  // If no data provided, show placeholder
+  if (trendingTokens.length === 0 && trustedTokens.length === 0 && recentTokens.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Token Statistics</CardTitle>
+          <CardDescription>
+            {address ? `Statistics for ${formatAddress(address)}` : 'No token statistics available'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p>Token statistics data is not available yet.</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

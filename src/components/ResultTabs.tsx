@@ -1,3 +1,4 @@
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEffect, useState } from "react";
@@ -15,7 +16,7 @@ import SentimentMeter from "./SentimentMeter";
 import ScoreCard from "./ScoreCard";
 import TokenAnalysis from "./TokenAnalysis";
 import TokenContractAnalysis from "./TokenContractAnalysis";
-import TokenStats from "./TokenStats";
+import TokenStats, { TokenStatsProps } from "./TokenStats";
 import AnalysisReport from "./AnalysisReport";
 import LoadingAnimation from "./LoadingAnimation";
 
@@ -25,6 +26,7 @@ const ResultTabs = () => {
   const [tokenInfo, setTokenInfo] = useState<TokenInfo | null>(null);
   const [analysisResult, setAnalysisResult] = useState<TrustAnalysis | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
+  const [network, setNetwork] = useState("eth");
 
   useEffect(() => {
     const fetchTokenData = async () => {
@@ -68,6 +70,94 @@ const ResultTabs = () => {
       </Card>
     );
   }
+
+  // Mock data for token stats
+  const mockTokenStats: TokenStatsProps = {
+    address: address,
+    trendingTokens: [
+      {
+        address: "0x1234567890abcdef1234567890abcdef12345678",
+        name: "Sample Token 1",
+        symbol: "ST1",
+        network: "ethereum",
+        trustScore: 85,
+        riskLevel: "Low Risk",
+        timestamp: new Date().toISOString()
+      },
+      {
+        address: "0xabcdef1234567890abcdef1234567890abcdef12",
+        name: "Sample Token 2",
+        symbol: "ST2",
+        network: "ethereum",
+        trustScore: 65,
+        riskLevel: "Medium Risk",
+        timestamp: new Date().toISOString()
+      }
+    ],
+    trustedTokens: [
+      {
+        address: "0x1234567890abcdef1234567890abcdef12345678",
+        name: "Sample Token 1",
+        symbol: "ST1",
+        network: "ethereum",
+        trustScore: 95,
+        timestamp: new Date().toISOString()
+      }
+    ],
+    recentTokens: [
+      {
+        address: "0xabcdef1234567890abcdef1234567890abcdef12",
+        name: "Sample Token 2",
+        symbol: "ST2",
+        network: "ethereum",
+        riskLevel: "Medium Risk",
+        timestamp: new Date().toISOString()
+      }
+    ]
+  };
+
+  // Mock data for token contract analysis
+  const mockContractData = {
+    tokenOverview: {
+      name: tokenInfo?.name || "Unknown Token",
+      symbol: tokenInfo?.symbol || "???",
+      address: address || "",
+      decimals: 18,
+      totalSupply: "1000000000000000000000000",
+      deployer: "0x1234567890abcdef1234567890abcdef12345678",
+      creationTime: new Date().toISOString()
+    },
+    rugPullRisk: {
+      score: 20,
+      level: "Low Risk",
+      indicators: [],
+      ownershipRenounced: true
+    },
+    honeypotCheck: {
+      isHoneypot: false,
+      risk: "Low",
+      indicators: []
+    },
+    contractVulnerability: {
+      isVerified: true,
+      riskyFunctions: [],
+      liquidityLocked: true
+    },
+    sybilAttack: {
+      score: 15,
+      level: "Low Risk",
+      suspiciousAddresses: 2,
+      uniqueReceivers: 45,
+      uniqueSenders: 38
+    },
+    walletReputation: {
+      score: 85,
+      level: "Trustworthy",
+      previousScams: 0
+    },
+    scamPatternMatch: "This token does not match known scam patterns.",
+    timestamp: new Date().toISOString()
+  };
 
   return (
     <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -139,19 +229,48 @@ const ResultTabs = () => {
           </TabsContent>
 
           <TabsContent value="transactions">
-            <TokenAnalysis address={address || ""} />
+            <TokenAnalysis address={address || ""} network={network} />
           </TabsContent>
 
           <TabsContent value="contract">
-            <TokenContractAnalysis address={address || ""} />
+            <TokenContractAnalysis address={address} tokenData={mockContractData} />
           </TabsContent>
 
           <TabsContent value="stats">
-            <TokenStats address={address || ""} />
+            <TokenStats {...mockTokenStats} />
           </TabsContent>
 
           <TabsContent value="report">
-            <AnalysisReport address={address || ""} />
+            {analysisResult && (
+              <AnalysisReport 
+                address={address || ""}
+                network={network}
+                scores={{
+                  trust_score: analysisResult.trustScore,
+                  developer_score: 75,
+                  liquidity_score: 60,
+                  community_score: 80,
+                  holder_distribution: 70,
+                  fraud_risk: 15,
+                  social_sentiment: 75
+                }}
+                analysis={analysisResult.analysis}
+                timestamp={new Date().toISOString()}
+                tokenData={tokenInfo ? {
+                  tokenName: tokenInfo.name,
+                  tokenSymbol: tokenInfo.symbol,
+                  totalSupply: "1000000000",
+                  decimals: 18,
+                  holderCount: 500,
+                  isLiquidityLocked: true,
+                  isVerified: true
+                } : undefined}
+                scamIndicators={analysisResult.riskFactors.map(risk => ({
+                  label: "Risk Factor",
+                  description: risk
+                }))}
+              />
+            )}
           </TabsContent>
         </CardContent>
         <CardFooter>

@@ -3,7 +3,6 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AnalysisReport from '@/components/AnalysisReport';
-import TokenContractAnalysis from '@/components/TokenContractAnalysis';
 import LoadingAnimation from '@/components/LoadingAnimation';
 import ResultTabs from '@/components/ResultTabs';
 import { toast } from 'sonner';
@@ -95,7 +94,6 @@ const Result = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [analysisData, setAnalysisData] = useState<any>(null);
   const [tokenData, setTokenData] = useState<TokenData | null>(null);
-  const [contractAnalysis, setContractAnalysis] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [showVisualReport, setShowVisualReport] = useState(false);
   const [apiResponses, setApiResponses] = useState<{
@@ -250,13 +248,7 @@ const Result = () => {
                   )}
                 </>
               ) : (
-                <ResultTabs 
-                  contractAnalysis={contractAnalysis}
-                  analysisData={analysisData}
-                  tokenData={tokenData}
-                  address={address}
-                  network={network}
-                />
+                <ResultTabs />
               )}
               
               {false && apiResponses.tokenInfo && (

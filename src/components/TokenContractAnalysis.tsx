@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { 
   AlertTriangle, 
@@ -24,7 +23,8 @@ import {
 import { Button } from '@/components/ui/button';
 
 interface TokenContractAnalysisProps {
-  tokenData: {
+  address?: string;
+  tokenData?: {
     tokenOverview: {
       name: string;
       symbol: string;
@@ -67,7 +67,23 @@ interface TokenContractAnalysisProps {
   };
 }
 
-const TokenContractAnalysis: React.FC<TokenContractAnalysisProps> = ({ tokenData }) => {
+const TokenContractAnalysis: React.FC<TokenContractAnalysisProps> = ({ address, tokenData }) => {
+  if (!tokenData) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Contract Analysis</CardTitle>
+          <CardDescription>
+            {address ? `Analysis for ${address}` : 'No contract data available'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p>Contract analysis data is not available yet.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const {
     tokenOverview,
     rugPullRisk,
@@ -78,14 +94,12 @@ const TokenContractAnalysis: React.FC<TokenContractAnalysisProps> = ({ tokenData
     scamPatternMatch
   } = tokenData;
 
-  // Utility function to format a large number with decimals
   const formatTokenAmount = (amount: string, decimals: number): string => {
     const amountNum = parseFloat(amount);
     const formattedAmount = amountNum / Math.pow(10, decimals);
     return formattedAmount.toLocaleString(undefined, { maximumFractionDigits: 2 });
   };
 
-  // Helper function to render risk indicators
   const renderRiskIndicators = (indicators: Array<{term: string; found: boolean; risk: string}>) => {
     return indicators.map((indicator, index) => (
       <TooltipProvider key={index}>
@@ -104,7 +118,6 @@ const TokenContractAnalysis: React.FC<TokenContractAnalysisProps> = ({ tokenData
     ));
   };
 
-  // Helper function to render risk level badge
   const renderRiskLevel = (level: string) => {
     switch (level) {
       case 'High Risk':
@@ -140,7 +153,6 @@ const TokenContractAnalysis: React.FC<TokenContractAnalysisProps> = ({ tokenData
 
   return (
     <div className="space-y-6">
-      {/* Token Overview */}
       <Card className="glass-card border-neon-cyan">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -198,7 +210,6 @@ const TokenContractAnalysis: React.FC<TokenContractAnalysisProps> = ({ tokenData
         </CardContent>
       </Card>
 
-      {/* Rug Pull Risk */}
       <Card className="glass-card border-neon-pink">
         <CardHeader>
           <div className="flex justify-between items-center">
@@ -267,7 +278,6 @@ const TokenContractAnalysis: React.FC<TokenContractAnalysisProps> = ({ tokenData
         </CardContent>
       </Card>
 
-      {/* Honeypot Check */}
       <Card className="glass-card border-neon-orange">
         <CardHeader>
           <div className="flex justify-between items-center">
@@ -323,7 +333,6 @@ const TokenContractAnalysis: React.FC<TokenContractAnalysisProps> = ({ tokenData
         </CardContent>
       </Card>
 
-      {/* Contract Vulnerability Analysis */}
       <Card className="glass-card border-neon-purple">
         <CardHeader>
           <div className="flex justify-between items-center">
@@ -404,7 +413,6 @@ const TokenContractAnalysis: React.FC<TokenContractAnalysisProps> = ({ tokenData
         </CardContent>
       </Card>
 
-      {/* Sybil Attack / Bot Activity */}
       <Card className="glass-card border-neon-blue">
         <CardHeader>
           <div className="flex justify-between items-center">
@@ -459,7 +467,6 @@ const TokenContractAnalysis: React.FC<TokenContractAnalysisProps> = ({ tokenData
         </CardContent>
       </Card>
 
-      {/* Wallet Reputation */}
       <Card className="glass-card border-neon-cyan">
         <CardHeader>
           <div className="flex justify-between items-center">
@@ -506,7 +513,6 @@ const TokenContractAnalysis: React.FC<TokenContractAnalysisProps> = ({ tokenData
         </CardContent>
       </Card>
 
-      {/* Scam Pattern Similarity */}
       <Card className="glass-card border-neon-yellow">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
