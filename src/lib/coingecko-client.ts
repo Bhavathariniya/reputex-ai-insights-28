@@ -32,6 +32,25 @@ export interface TokenInfo {
     };
     last_updated: string;
   };
+  market_data?: {
+    current_price?: { usd?: number };
+    market_cap?: { usd?: number };
+    total_volume?: { usd?: number };
+    price_change_percentage_24h?: number;
+  };
+  developer_data?: {
+    forks?: number;
+    stars?: number;
+    subscribers?: number;
+    total_issues?: number;
+    closed_issues?: number;
+    commit_count_4_weeks?: number;
+  };
+  community_data?: {
+    twitter_followers?: number;
+    reddit_subscribers?: number;
+    telegram_channel_user_count?: number;
+  };
 }
 
 export interface TokenInfoResponse {
@@ -42,20 +61,145 @@ export interface TokenInfoResponse {
   };
 }
 
+// Interface for CoinGecko coin data
+interface CoinGeckoTokenData {
+  id: string;
+  name: string;
+  symbol: string;
+  image: {
+    thumb?: string;
+    small?: string;
+    large?: string;
+  };
+  description: {
+    en?: string;
+  };
+  links: {
+    homepage: string[];
+    twitter_screen_name?: string;
+    telegram_channel_identifier?: string;
+    chat_url?: string[];
+    subreddit_url?: string;
+    repos_url?: {
+      github?: string[];
+    };
+  };
+  coingecko_score?: number;
+  market_data?: {
+    current_price?: {
+      usd?: number;
+    };
+    market_cap?: {
+      usd?: number;
+    };
+    total_volume?: {
+      usd?: number;
+    };
+    price_change_percentage_24h?: number;
+  };
+  developer_data?: {
+    forks?: number;
+    stars?: number;
+    subscribers?: number;
+    total_issues?: number;
+    closed_issues?: number;
+    commit_count_4_weeks?: number;
+  };
+  community_data?: {
+    twitter_followers?: number;
+    reddit_subscribers?: number;
+    telegram_channel_user_count?: number;
+  };
+}
+
 export const getTokenInfo = async (network: string, address: string): Promise<TokenInfo | null> => {
   try {
-    const response = await axios.get<TokenInfoResponse>(
-      `${BASE_URL}/onchain/networks/${network}/tokens/${address}/info`,
-      {
-        headers: {
-          'x-cg-pro-api-key': COINGECKO_API_KEY,
+    // First try the coin data endpoint
+    try {
+      const response = await axios.get<CoinGeckoTokenData>(
+        `${BASE_URL}/coins/${network}/contract/${address}`,
+        {
+          params: {
+            localization: false,
+            tickers: false,
+            community_data: true,
+            developer_data: true,
+            sparkline: false
+          }
+        }
+      );
+      
+      // Format the response to match our TokenInfo interface
+      const data = response.data;
+      
+      // Return formatted data
+      return {
+        id: data.id,
+        name: data.name,
+        symbol: data.symbol,
+        image_url: data.image?.small || '',
+        description: data.description?.en || '',
+        websites: data.links?.homepage?.filter(Boolean) || [],
+        gt_score: data.coingecko_score || 50,
+        twitter_handle: data.links?.twitter_screen_name,
+        discord_url: data.links?.chat_url?.[0],
+        telegram_handle: data.links?.telegram_channel_identifier,
+        market_data: {
+          current_price: { usd: data.market_data?.current_price?.usd },
+          market_cap: { usd: data.market_data?.market_cap?.usd },
+          total_volume: { usd: data.market_data?.total_volume?.usd },
+          price_change_percentage_24h: data.market_data?.price_change_percentage_24h
         },
+        developer_data: data.developer_data,
+        community_data: data.community_data
+      };
+    } catch (error) {
+      console.warn('CoinGecko coin data request failed, trying alternative endpoint:', error);
+      
+      // Try the token info endpoint as backup
+      const response = await axios.get<TokenInfoResponse>(
+        `${BASE_URL}/coins/ethereum/contract/${address}`,
+        {
+          headers: {
+            'x-cg-pro-api-key': COINGECKO_API_KEY,
+          },
+        }
+      );
+      
+      console.log('CoinGecko API response:', response.data);
+      return response.data.data?.attributes || null;
+    }
+  } catch (error) {
+    console.error('All CoinGecko API requests failed:', error.response?.data || error.message);
+    
+    // Return minimal fallback data
+    return {
+      id: '',
+      name: '',
+      symbol: '',
+      image_url: '',
+      description: 'No data available from CoinGecko',
+      websites: [],
+      gt_score: 0
+    };
+  }
+};
+
+export const getTokenMarketData = async (address: string): Promise<any | null> => {
+  try {
+    const response = await axios.get(
+      `${BASE_URL}/coins/ethereum/contract/${address}/market_chart`,
+      {
+        params: {
+          vs_currency: 'usd',
+          days: 30
+        }
       }
     );
-    console.log('CoinGecko API response:', response.data);
-    return response.data.data.attributes;
+    
+    return response.data;
   } catch (error) {
-    console.error('CoinGecko API request failed:', error.response?.data || error.message);
+    console.error('CoinGecko market data request failed:', error.response?.data || error.message);
     return null;
   }
 };
