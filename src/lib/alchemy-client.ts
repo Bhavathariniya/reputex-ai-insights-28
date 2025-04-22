@@ -1,3 +1,4 @@
+
 import { Alchemy, Network } from 'alchemy-sdk';
 
 const ALCHEMY_CONFIG = {
@@ -80,7 +81,8 @@ export async function getTokenAllowance(
   spenderAddress: string
 ): Promise<string> {
   try {
-    const provider = alchemy.config.getProvider();
+    // Since getProvider returns a Promise, we need to await it first
+    const provider = await alchemy.config.getProvider();
     const response = await provider.send("alchemy_getTokenAllowance", [{
       contract: contractAddress,
       owner: ownerAddress,
