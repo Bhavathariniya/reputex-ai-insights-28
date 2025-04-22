@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
@@ -89,16 +88,22 @@ const Result = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  
   const addressFromParams = searchParams.get('address');
   const networkFromParams = searchParams.get('network');
   
-  const { address = addressFromParams, network = networkFromParams || 'ethereum' } = location.state || {};
+  const addressFromState = location.state?.address;
+  const networkFromState = location.state?.network;
+  
+  const address = addressFromParams || addressFromState;
+  const network = networkFromParams || networkFromState || 'ethereum';
   
   const [isLoading, setIsLoading] = useState(true);
   const [analysisData, setAnalysisData] = useState<any>(null);
   const [tokenData, setTokenData] = useState<TokenData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showVisualReport, setShowVisualReport] = useState(false);
+
   const [apiResponses, setApiResponses] = useState<{
     tokenInfo?: any;
     sourceCode?: any;
@@ -124,12 +129,10 @@ const Result = () => {
           throw new Error('Failed to fetch token metadata');
         }
 
-        // Get additional data from Alchemy
         const contractData = await getContractData(address);
         const transferAnalysis = await analyzeTokenTransfers(address);
         const honeypotCheck = await checkHoneypotRisk(address);
         
-        // Get token info from CoinGecko and analyze with Gemini
         const tokenInfo = await getTokenInfo(network === 'auto' ? 'ethereum' : network, address);
         const trustAnalysis = await analyzeTrustScore(tokenInfo, contractData);
         
@@ -137,12 +140,10 @@ const Result = () => {
           throw new Error('Failed to analyze token');
         }
         
-        // Calculate developer score based on available data
         const developerScore = tokenInfo?.developer_data?.commit_count_4_weeks 
           ? Math.min(100, 50 + tokenInfo.developer_data.commit_count_4_weeks)
           : Math.floor(Math.random() * 20) + 60;
           
-        // Calculate community score based on social data
         const communitySentiment = tokenInfo?.community_data?.twitter_followers || tokenInfo?.community_data?.reddit_subscribers
           ? Math.min(100, 40 + (
               (tokenInfo?.community_data?.twitter_followers || 0) / 100 + 
@@ -150,24 +151,19 @@ const Result = () => {
             ))
           : Math.floor(Math.random() * 20) + 60;
         
-        // Use liquidity locked status from contract data
         const liquidityScore = contractData?.isLiquidityLocked ? 85 : 40;
         
-        // Calculate holder distribution score
         const holderDistScore = tokenInfo?.holders?.count 
           ? Math.min(90, 40 + tokenInfo.holders.count / 100)
           : transferAnalysis.uniqueReceivers > 50 ? 75 : 50;
             
-        // Calculate fraud risk score (inverse of trust score)
         const fraudRisk = Math.max(0, 100 - trustAnalysis.trustScore);
         
-        // Format scam indicators from risk factors
         const scamIndicators = trustAnalysis.riskFactors.map(risk => ({
           label: "Risk Factor",
           description: risk
         }));
         
-        // Add honeypot indicators if any
         if (honeypotCheck && honeypotCheck.indicators?.length > 0) {
           honeypotCheck.indicators.forEach(indicator => {
             scamIndicators.push({
@@ -177,7 +173,6 @@ const Result = () => {
           });
         }
         
-        // Add contract vulnerability indicators if any
         if (trustAnalysis.contractVulnerabilities?.length > 0) {
           trustAnalysis.contractVulnerabilities.forEach(vulnerability => {
             scamIndicators.push({
@@ -313,26 +308,6 @@ const Result = () => {
                 </>
               ) : (
                 <ResultTabs />
-              )}
-              
-              {false && apiResponses.tokenInfo && (
-                <div className="mt-8 p-4 border border-muted rounded">
-                  <h3 className="text-lg font-semibold mb-2">API Response Debug</h3>
-                  <div className="grid grid-cols-1 gap-4">
-                    <div>
-                      <h4 className="font-medium">Token Info Response:</h4>
-                      <pre className="text-xs overflow-auto p-2 bg-muted/30 rounded">
-                        {JSON.stringify(apiResponses.tokenInfo, null, 2)}
-                      </pre>
-                    </div>
-                    <div>
-                      <h4 className="font-medium">Source Code Response:</h4>
-                      <pre className="text-xs overflow-auto p-2 bg-muted/30 rounded">
-                        {JSON.stringify(apiResponses.sourceCode, null, 2)}
-                      </pre>
-                    </div>
-                  </div>
-                </div>
               )}
             </>
           )}

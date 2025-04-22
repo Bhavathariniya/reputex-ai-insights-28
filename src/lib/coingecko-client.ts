@@ -139,6 +139,8 @@ const NETWORK_TO_PLATFORM = {
   'zksync': 'zksync'
 };
 
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 // Fetch token info from CoinGecko
 export const getTokenInfo = async (network: string, address: string): Promise<TokenInfo | null> => {
   try {
@@ -148,6 +150,8 @@ export const getTokenInfo = async (network: string, address: string): Promise<To
     // Try to use the Pro API first, then fall back to the public API
     let response;
     try {
+      console.log(`Fetching token info for ${address} on ${platformId}...`);
+      
       // For Solana, we need to use a different endpoint format
       if (platformId === 'solana') {
         response = await axios.get<CoinGeckoTokenData>(
@@ -183,6 +187,11 @@ export const getTokenInfo = async (network: string, address: string): Promise<To
         );
       }
     } catch (error) {
+      console.warn('Pro API request failed, trying public API');
+      
+      // If Pro API fails, wait a bit and try the public API
+      await sleep(500);
+      
       // If Pro API fails, try the public API
       if (platformId === 'solana') {
         response = await axios.get<CoinGeckoTokenData>(
@@ -215,6 +224,11 @@ export const getTokenInfo = async (network: string, address: string): Promise<To
     
     const data = response.data;
     
+    if (!data || !data.name) {
+      console.warn('Invalid or incomplete data received from CoinGecko API');
+      return null;
+    }
+    
     return {
       id: data.id,
       name: data.name,
@@ -237,9 +251,20 @@ export const getTokenInfo = async (network: string, address: string): Promise<To
       holders: data.holders
     };
 
-  } catch (error) {
-    console.warn('CoinGecko API request failed:', error);
-    return null;
+  } catch (error: any) {
+    console.warn('CoinGecko API request failed:', error.message);
+    console.warn('Error details:', error.response?.data || error);
+    
+    // Try alternate endpoints or API formats if available
+    try {
+      // For some networks, we might need a different approach to get data
+      // This is a placeholder for implementing alternative data fetching strategies
+      console.log("Attempting to fetch data using alternative method...");
+      return null;
+    } catch (alternateError) {
+      console.error("Alternative data fetching also failed");
+      return null;
+    }
   }
 };
 
@@ -259,7 +284,7 @@ export const getTokenMarketData = async (address: string, network: string = 'eth
     );
     
     return response.data;
-  } catch (error) {
+  } catch (error: any) {
     console.error('CoinGecko market data request failed:', error.response?.data || error.message);
     return null;
   }

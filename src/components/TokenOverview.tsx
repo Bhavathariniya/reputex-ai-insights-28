@@ -2,21 +2,34 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Separator } from './ui/separator';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, AlertCircle } from 'lucide-react';
+import { TokenInfo } from '@/lib/coingecko-client';
+import { TrustAnalysis } from '@/lib/gemini-client';
 
 interface TokenOverviewProps {
-  tokenInfo: any;
-  analysis: any;
+  tokenInfo: TokenInfo | null;
+  analysis: TrustAnalysis | null;
 }
 
 const TokenOverview: React.FC<TokenOverviewProps> = ({ tokenInfo, analysis }) => {
-  if (!tokenInfo) {
+  if (!tokenInfo || !analysis) {
     return (
       <Card className="w-full">
         <CardHeader>
           <CardTitle>Token Overview</CardTitle>
           <CardDescription>No token data available</CardDescription>
         </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center py-8">
+            <div className="text-center">
+              <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground" />
+              <p className="mt-4 text-lg font-medium">We couldn't find data for this token</p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                This token may not be listed on CoinGecko or may have an invalid contract address.
+              </p>
+            </div>
+          </div>
+        </CardContent>
       </Card>
     );
   }
@@ -30,6 +43,9 @@ const TokenOverview: React.FC<TokenOverviewProps> = ({ tokenInfo, analysis }) =>
               src={tokenInfo.image_url} 
               alt={tokenInfo.name} 
               className="w-12 h-12 rounded-full"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
             />
           )}
           <div>

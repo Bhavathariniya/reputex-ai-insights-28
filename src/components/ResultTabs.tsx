@@ -1,8 +1,7 @@
-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation, useSearchParams } from "react-router-dom";
 import { Button } from "./ui/button";
 import { AlertTriangle, AreaChart, FileCog, LineChart, ShieldAlert, ShieldCheck, UserRound, Wallet } from "lucide-react";
 import { getTokenInfo, TokenInfo } from "@/lib/coingecko-client";
@@ -51,7 +50,15 @@ const NETWORK_MAP: Record<string, string> = {
 };
 
 const ResultTabs = () => {
-  const { address } = useParams<{ address: string }>();
+  // Get address from URL parameters
+  const { address: paramAddress } = useParams<{ address: string }>();
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+  
+  // Try to get address from multiple sources
+  const addressFromParams = searchParams.get('address');
+  const address = paramAddress || addressFromParams || (location.state?.address as string);
+  
   const [isLoading, setIsLoading] = useState(false);
   const [tokenInfo, setTokenInfo] = useState<TokenInfo | null>(null);
   const [analysisResult, setAnalysisResult] = useState<TrustAnalysis | null>(null);
@@ -60,20 +67,27 @@ const ResultTabs = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Try to get network from localStorage or URL params
+    // Try to get network from localStorage, URL params or state
     const storedNetwork = localStorage.getItem('selectedNetwork') || 'eth';
-    const urlSearchParams = new URLSearchParams(window.location.search);
-    const networkParam = urlSearchParams.get('network');
+    const networkParam = searchParams.get('network');
+    const networkFromState = location.state?.network;
     
     // Use network param if provided, otherwise use stored network
     const selectedNetwork = networkParam ? 
       NETWORK_MAP[networkParam.toLowerCase()] || networkParam.toLowerCase() : 
-      storedNetwork;
+      networkFromState ? 
+        NETWORK_MAP[networkFromState.toLowerCase()] || networkFromState.toLowerCase() :
+        storedNetwork;
     
     setNetwork(selectedNetwork);
     
     const fetchTokenData = async () => {
-      if (!address) return;
+      if (!address) {
+        setError("No token address provided");
+        return;
+      }
+      
+      console.log("Fetching data for address:", address, "on network:", selectedNetwork);
       
       setIsLoading(true);
       setError(null);
@@ -126,8 +140,10 @@ const ResultTabs = () => {
 
     if (address) {
       fetchTokenData();
+    } else {
+      setError("No token address provided");
     }
-  }, [address]);
+  }, [address, searchParams, location.state]);
 
   if (isLoading) {
     return (
