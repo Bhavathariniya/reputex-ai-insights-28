@@ -1,4 +1,3 @@
-
 import { Alchemy, Network } from 'alchemy-sdk';
 
 const ALCHEMY_CONFIG = {
@@ -8,10 +7,15 @@ const ALCHEMY_CONFIG = {
 
 const alchemy = new Alchemy(ALCHEMY_CONFIG);
 
-interface TokenBalanceResponse {
-  jsonrpc: string;
-  id: number;
-  result: string;
+interface TokenBalance {
+  contractAddress: string;
+  tokenBalance: string;
+  error: string | null;
+}
+
+interface TokenBalancesResponse {
+  address: string;
+  tokenBalances: TokenBalance[];
 }
 
 interface TokenMetadata {
@@ -53,13 +57,47 @@ export async function validateAddress(address: string): Promise<boolean> {
   return /^0x[a-fA-F0-9]{40}$/.test(address);
 }
 
+export async function getTokenBalances(address: string): Promise<TokenBalancesResponse> {
+  try {
+    const balances = await alchemy.core.getTokenBalances(address, ['erc20']);
+    return {
+      address: balances.address,
+      tokenBalances: balances.tokenBalances.map(balance => ({
+        contractAddress: balance.contractAddress,
+        tokenBalance: balance.tokenBalance,
+        error: balance.error
+      }))
+    };
+  } catch (error) {
+    console.error('Error fetching token balances:', error);
+    throw error;
+  }
+}
+
+export async function getTokenAllowance(
+  contractAddress: string,
+  ownerAddress: string,
+  spenderAddress: string
+): Promise<string> {
+  try {
+    const allowance = await alchemy.core.getTokenAllowance({
+      contract: contractAddress,
+      owner: ownerAddress,
+      spender: spenderAddress
+    });
+    return allowance.toString();
+  } catch (error) {
+    console.error('Error fetching token allowance:', error);
+    throw error;
+  }
+}
+
 export async function getTokenMetadata(address: string): Promise<TokenMetadata> {
   try {
     const metadata = await alchemy.core.getTokenMetadata(address);
     
-    // For total supply, we need to use getTokenBalances instead of getTokenBalance (which doesn't exist)
+    // For total supply, we need to use getTokenBalances instead of getTokenBalance
     // We'll get token balances for this token address from a major holder or the token contract itself
-    // Note: This is a simplified approach as total supply would typically come from the contract directly
     const balances = await alchemy.core.getTokenBalances(address, [address]);
     const balance = balances.tokenBalances[0]?.tokenBalance || '0';
     
