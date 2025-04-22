@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
@@ -11,11 +10,9 @@ import { toast } from 'sonner';
 import { analyzeEthereumToken } from '@/lib/api-client';
 import { detectNetwork, getTokenMetadata, analyzeTokenWithGemini } from '@/lib/alchemy-client';
 
-// API configurations
 const ETHERSCAN_API_KEY = "VZFDUWB3YGQ1YCDKTCU1D6DDSS";
 const ETHERSCAN_API_URL = "https://api.etherscan.io/api";
 
-// Backup API keys if needed
 const BACKUP_API_KEYS = {
   ethereum: "VZFDUWB3YGQ1YCDKTCU1D6DDSS",
   binance: "ZM8ACMJB67C2IXKKBF8URFUNSY",
@@ -24,7 +21,6 @@ const BACKUP_API_KEYS = {
   optimism: "66N5FRNV1ZD4I87S7MAHCJVXFJ"
 };
 
-// API URLs by network
 const API_URLS = {
   ethereum: "https://api.etherscan.io/api",
   binance: "https://api.bscscan.com/api",
@@ -33,7 +29,6 @@ const API_URLS = {
   optimism: "https://api-optimistic.etherscan.io/api"
 };
 
-// Interfaces for API responses
 interface TokenInfoResponse {
   status: string;
   message: string;
@@ -95,7 +90,6 @@ const Result = () => {
   const addressFromParams = searchParams.get('address');
   const networkFromParams = searchParams.get('network');
   
-  // Get address and network from state or URL params
   const { address = addressFromParams, network = networkFromParams || 'ethereum' } = location.state || {};
   
   const [isLoading, setIsLoading] = useState(true);
@@ -121,21 +115,25 @@ const Result = () => {
         setIsLoading(true);
         setError(null);
 
-        // First detect network if not specified
         const detectedNetwork = network === 'auto' ? await detectNetwork(address) : network;
         
-        // Fetch token metadata from Alchemy
-        const tokenMetadata = await getTokenMetadata(address, detectedNetwork);
+        const tokenMetadata = await getTokenMetadata(address);
         
-        // Analyze token with Gemini
+        if (!tokenMetadata) {
+          throw new Error('Failed to fetch token metadata');
+        }
+
         const geminiAnalysis = await analyzeTokenWithGemini(tokenMetadata);
         
-        // Update analysis data with Gemini results
+        if (!geminiAnalysis) {
+          throw new Error('Failed to analyze token');
+        }
+
         setAnalysisData({
           scores: {
             trust_score: geminiAnalysis.trustScore,
             developer_score: Math.floor(Math.random() * 20) + 80,
-            liquidity_score: Math.floor(Math.random() * 40) + 40, // Random score for liquidity
+            liquidity_score: Math.floor(Math.random() * 40) + 40,
             community_score: Math.floor(Math.random() * 20) + 70,
             holder_distribution: Math.floor(Math.random() * 30) + 60,
             fraud_risk: Math.floor(Math.random() * 20),
@@ -152,13 +150,12 @@ const Result = () => {
             tokenSymbol: tokenMetadata.symbol,
             totalSupply: tokenMetadata.totalSupply,
             decimals: tokenMetadata.decimals,
-            holderCount: Math.floor(Math.random() * 1000) + 100, // To be replaced with real data
-            isLiquidityLocked: false, // To be determined from other sources
-            isVerified: true // Default to true for now
+            holderCount: Math.floor(Math.random() * 1000) + 100,
+            isLiquidityLocked: false,
+            isVerified: true
           }
         });
 
-        // Set token data with all required properties
         setTokenData({
           tokenName: tokenMetadata.name,
           tokenSymbol: tokenMetadata.symbol,
@@ -166,7 +163,7 @@ const Result = () => {
           decimals: tokenMetadata.decimals,
           holderCount: Math.floor(Math.random() * 1000) + 100,
           isLiquidityLocked: false,
-          isVerified: true // Add the missing required property
+          isVerified: true
         });
 
       } catch (error) {
@@ -239,7 +236,6 @@ const Result = () => {
           ) : (
             <>
               {showVisualReport ? (
-                // Visual report
                 <>
                   {analysisData && (
                     <AnalysisReport 
@@ -254,7 +250,6 @@ const Result = () => {
                   )}
                 </>
               ) : (
-                // Tabbed report
                 <ResultTabs 
                   contractAnalysis={contractAnalysis}
                   analysisData={analysisData}
@@ -264,7 +259,6 @@ const Result = () => {
                 />
               )}
               
-              {/* Debug information - can be removed in production */}
               {false && apiResponses.tokenInfo && (
                 <div className="mt-8 p-4 border border-muted rounded">
                   <h3 className="text-lg font-semibold mb-2">API Response Debug</h3>
