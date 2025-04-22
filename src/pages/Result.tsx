@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
@@ -9,6 +8,7 @@ import LoadingAnimation from '@/components/LoadingAnimation';
 import ResultTabs from '@/components/ResultTabs';
 import { toast } from 'sonner';
 import { analyzeEthereumToken } from '@/lib/api-client';
+import { detectNetwork, getTokenMetadata, analyzeTokenWithGemini } from '@/lib/alchemy-client';
 
 // API configurations
 const ETHERSCAN_API_KEY = "VZFDUWB3YGQ1YCDKTCU1D6DDSS";
@@ -119,159 +119,50 @@ const Result = () => {
       try {
         setIsLoading(true);
         setError(null);
-        
-        // Build API URLs
-        const apiUrl = network === 'ethereum' ? ETHERSCAN_API_URL : API_URLS[network as keyof typeof API_URLS];
-        const apiKey = network === 'ethereum' ? ETHERSCAN_API_KEY : BACKUP_API_KEYS[network as keyof typeof BACKUP_API_KEYS];
-        
-        if (!apiUrl || !apiKey) {
-          throw new Error(`Unsupported network: ${network}`);
-        }
 
-        // 1. Token Info API call
-        const tokenInfoUrl = `${apiUrl}?module=token&action=tokeninfo&contractaddress=${address}&apikey=${apiKey}`;
+        // First detect network if not specified
+        const detectedNetwork = network === 'auto' ? await detectNetwork(address) : network;
         
-        // 2. Source Code API call
-        const sourceCodeUrl = `${apiUrl}?module=contract&action=getsourcecode&address=${address}&apikey=${apiKey}`;
+        // Fetch token metadata from Alchemy
+        const tokenMetadata = await getTokenMetadata(address, detectedNetwork);
         
-        // 3. Transaction list API call (to find creator)
-        const transactionListUrl = `${apiUrl}?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=asc&apikey=${apiKey}`;
-
-        // Make parallel API calls
-        const [tokenInfoResponse, sourceCodeResponse, transactionListResponse] = await Promise.all([
-          fetch(tokenInfoUrl),
-          fetch(sourceCodeUrl),
-          fetch(transactionListUrl)
-        ]);
-
-        // Parse responses
-        const tokenInfoData: TokenInfoResponse = await tokenInfoResponse.json();
-        const sourceCodeData: SourceCodeResponse = await sourceCodeResponse.json();
-        const transactionListData: TransactionListResponse = await transactionListResponse.json();
-
-        // Store raw responses for debugging
-        setApiResponses({
-          tokenInfo: tokenInfoData,
-          sourceCode: sourceCodeData,
-          transactions: transactionListData
+        // Analyze token with Gemini
+        const geminiAnalysis = await analyzeTokenWithGemini(tokenMetadata);
+        
+        // Update analysis data with Gemini results
+        setAnalysisData({
+          scores: {
+            trust_score: geminiAnalysis.trustScore,
+            developer_score: Math.floor(Math.random() * 20) + 80,
+            liquidity_score: tokenInfo?.isLiquidityLocked ? 85 : 45,
+            community_score: Math.floor(Math.random() * 20) + 70,
+            holder_distribution: Math.floor(Math.random() * 30) + 60,
+            fraud_risk: Math.floor(Math.random() * 20),
+            social_sentiment: Math.floor(Math.random() * 20) + 70
+          },
+          analysis: geminiAnalysis.analysis,
+          scamIndicators: geminiAnalysis.riskFactors.map(risk => ({
+            label: "Risk Factor",
+            description: risk
+          })),
+          timestamp: new Date().toISOString(),
+          tokenData: {
+            tokenName: tokenMetadata.name,
+            tokenSymbol: tokenMetadata.symbol,
+            totalSupply: tokenMetadata.totalSupply,
+            decimals: tokenMetadata.decimals,
+            holderCount: Math.floor(Math.random() * 1000) + 100, // To be replaced with real data
+            isLiquidityLocked: false // To be determined from other sources
+          }
         });
 
-        console.log('Token Info Response:', tokenInfoData);
-        console.log('Source Code Response:', sourceCodeData);
-        console.log('Transaction List Response:', transactionListData);
-
-        // Initialize default token info
-        let tokenInfo: TokenData = {
-          tokenName: 'Unverified Contract',
-          tokenSymbol: 'UNKNOWN',
-          totalSupply: '0',
-          decimals: 18,
-          holderCount: 0,
-          isLiquidityLocked: false,
-          isVerified: false
-        };
-
-        // Extract contract creator from transaction list if available
-        let contractCreator: string | undefined;
-        if (transactionListData.status === '1' && transactionListData.result && transactionListData.result.length > 0) {
-          // Find the contract creation transaction (where contractAddress is set)
-          const creationTx = transactionListData.result.find(tx => tx.contractAddress?.toLowerCase() === address.toLowerCase());
-          if (creationTx) {
-            contractCreator = creationTx.from;
-            // Use timestamp from creation transaction if available
-            const creationTime = creationTx.timeStamp ? 
-              new Date(parseInt(creationTx.timeStamp) * 1000).toISOString() : undefined;
-            tokenInfo.creationTime = creationTime;
-            tokenInfo.contractCreator = contractCreator;
-          }
-        }
-
-        // Try to get token info from tokeninfo endpoint first
-        if (tokenInfoData.status === '1' && tokenInfoData.result && tokenInfoData.result.length > 0) {
-          const result = tokenInfoData.result[0];
-          tokenInfo = {
-            ...tokenInfo,
-            tokenName: result.tokenName || tokenInfo.tokenName,
-            tokenSymbol: result.symbol || tokenInfo.tokenSymbol,
-            totalSupply: result.totalSupply || tokenInfo.totalSupply,
-            decimals: parseInt(result.divisor || '18'),
-            contractCreator: result.contractCreator || contractCreator || tokenInfo.contractCreator,
-            creationTime: result.creationTime ? 
-              new Date(parseInt(result.creationTime) * 1000).toISOString() : tokenInfo.creationTime
-          };
-        }
-
-        // Fallback to source code data if needed or to enrich tokenInfo
-        if (sourceCodeData.status === '1' && sourceCodeData.result && sourceCodeData.result.length > 0) {
-          const result = sourceCodeData.result[0];
-          
-          // Determine if contract is verified based on SourceCode presence
-          const isVerified = result.SourceCode !== '' && 
-                             result.SourceCode !== undefined && 
-                             result.SourceCode !== '0' && 
-                             result.ContractName !== '';
-          
-          tokenInfo = {
-            ...tokenInfo,
-            // If token name wasn't found in tokeninfo, use ContractName
-            tokenName: tokenInfo.tokenName === 'Unverified Contract' && result.ContractName !== 'Unknown' ? 
-                      result.ContractName : tokenInfo.tokenName,
-            contractCreator: result.ContractCreator || tokenInfo.contractCreator,
-            creationTime: result.DeployedTimestamp ? 
-              new Date(parseInt(result.DeployedTimestamp) * 1000).toISOString() : tokenInfo.creationTime,
-            isVerified: isVerified,
-            compilerVersion: result.CompilerVersion
-          };
-        }
-
-        // If still using default values, try network API specific to token details
-        if (tokenInfo.tokenName === 'Unverified Contract' && network === 'ethereum') {
-          try {
-            const ethAnalysisResponse = await analyzeEthereumToken(address);
-            if (ethAnalysisResponse.data) {
-              setContractAnalysis(ethAnalysisResponse.data);
-              
-              // Update token info with any additional data
-              const overviewData = ethAnalysisResponse.data.tokenOverview;
-              tokenInfo = {
-                ...tokenInfo,
-                tokenName: overviewData.name || tokenInfo.tokenName,
-                tokenSymbol: overviewData.symbol || tokenInfo.tokenSymbol,
-                totalSupply: overviewData.totalSupply || tokenInfo.totalSupply,
-                decimals: overviewData.decimals || tokenInfo.decimals,
-                contractCreator: overviewData.deployer || tokenInfo.contractCreator,
-                holderCount: Math.floor(Math.random() * 1000) + 100, // To be replaced with real data
-                isLiquidityLocked: ethAnalysisResponse.data.contractVulnerability?.liquidityLocked || false,
-                creationTime: overviewData.creationTime || tokenInfo.creationTime,
-                isVerified: ethAnalysisResponse.data.contractVulnerability?.isVerified || tokenInfo.isVerified
-              };
-            }
-          } catch (ethError) {
-            console.error("Error in Etherscan analysis:", ethError);
-            // Continue with what we have - don't fail if this fails
-          }
-        }
-
-        setTokenData(tokenInfo);
-        
-        // Generate analysis data
-        const analysisScores = {
-          trust_score: Math.floor(Math.random() * 30) + 70,
-          developer_score: Math.floor(Math.random() * 20) + 80,
-          liquidity_score: tokenInfo.isLiquidityLocked ? 85 : 45,
-          community_score: Math.floor(Math.random() * 20) + 70,
-          holder_distribution: Math.floor(Math.random() * 30) + 60,
-          fraud_risk: Math.floor(Math.random() * 20),
-          social_sentiment: Math.floor(Math.random() * 20) + 70
-        };
-
-        const analysisText = `${tokenInfo.tokenName} (${tokenInfo.tokenSymbol}) was analyzed. The contract ${tokenInfo.isVerified ? 'is verified' : 'is not verified'} on ${network}. ${tokenInfo.isLiquidityLocked ? 'The liquidity appears to be locked.' : 'No verified liquidity lock was found.'}`;
-
-        setAnalysisData({
-          scores: analysisScores,
-          analysis: analysisText,
-          timestamp: new Date().toISOString(),
-          tokenData: tokenInfo
+        setTokenData({
+          tokenName: tokenMetadata.name,
+          tokenSymbol: tokenMetadata.symbol,
+          totalSupply: tokenMetadata.totalSupply,
+          decimals: tokenMetadata.decimals,
+          holderCount: Math.floor(Math.random() * 1000) + 100,
+          isLiquidityLocked: false
         });
 
       } catch (error) {
@@ -398,4 +289,3 @@ const Result = () => {
 };
 
 export default Result;
-
