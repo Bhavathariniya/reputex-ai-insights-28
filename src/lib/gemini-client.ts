@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 
 const GEMINI_API_KEY = 'AIzaSyCKcAc1ZYcoviJ-6tdm-HuRguPMjMz6OSA';
@@ -17,113 +16,89 @@ export interface TrustAnalysis {
 
 export const analyzeTrustScore = async (tokenData: any, contractData?: any): Promise<TrustAnalysis> => {
   try {
-    // For now, let's create a fallback algorithm since there were issues with the Gemini API
-    // This will be used when the API fails
-    const fallbackAnalysis = generateFallbackAnalysis(tokenData, contractData);
-    
-    // Try to use Gemini API first - use v1beta model instead of v1
-    try {
-      const prompt = `
-Analyze this Ethereum token data and provide a comprehensive risk assessment:
+    const prompt = `
+Analyze this token data and provide a detailed risk assessment:
 
-TOKEN METADATA:
+TOKEN DATA:
 Name: ${tokenData.name || 'Unknown'}
 Symbol: ${tokenData.symbol || 'Unknown'}
 Trust Score from CoinGecko: ${tokenData.gt_score || 'Unknown'}
-Holders Count: ${tokenData.holders?.count || 'Unknown'}
-${tokenData.holders?.distribution_percentage ? `Distribution Percentage: ${JSON.stringify(tokenData.holders.distribution_percentage)}` : ''}
-${tokenData.market_data ? `Market Cap: $${tokenData.market_data.market_cap?.usd || 'Unknown'}` : ''}
-${tokenData.market_data ? `24h Volume: $${tokenData.market_data.total_volume?.usd || 'Unknown'}` : ''}
-${tokenData.market_data ? `24h Price Change: ${tokenData.market_data.price_change_percentage_24h || 'Unknown'}%` : ''}
+${tokenData.holders ? `Holders Count: ${tokenData.holders.count}` : ''}
+${tokenData.holders?.distribution_percentage ? `Distribution:
+- Top 10: ${tokenData.holders.distribution_percentage.top_10}%
+- 11-30: ${tokenData.holders.distribution_percentage['11_30']}%
+- 31-50: ${tokenData.holders.distribution_percentage['31_50']}%
+- Rest: ${tokenData.holders.distribution_percentage.rest}%` : ''}
 
-${tokenData.twitter_handle ? `Twitter: @${tokenData.twitter_handle}` : 'No Twitter presence'}
-${tokenData.discord_url ? `Discord: Available` : 'No Discord presence'}
-${tokenData.telegram_handle ? `Telegram: Available` : 'No Telegram presence'}
-${tokenData.websites && tokenData.websites.length > 0 ? `Website: ${tokenData.websites[0]}` : 'No website'}
+Social Presence:
+${tokenData.twitter_handle ? `- Twitter: @${tokenData.twitter_handle}` : '- No Twitter'}
+${tokenData.discord_url ? '- Discord: Present' : '- No Discord'}
+${tokenData.telegram_handle ? '- Telegram: Present' : '- No Telegram'}
+${tokenData.websites?.length ? `- Website: ${tokenData.websites[0]}` : '- No Website'}
 
-${contractData ? `CONTRACT DATA:
-Source Code: ${contractData.isVerified ? 'Verified' : 'Unverified'}
-Creation Date: ${contractData.creationTime || 'Unknown'}
-Creator Address: ${contractData.creatorAddress || 'Unknown'}
-Liquidity Locked: ${contractData.isLiquidityLocked ? 'Yes' : 'No/Unknown'}` : ''}
-
-Please analyze this token and provide a detailed risk assessment in JSON format with the following structure:
+Please analyze this token and provide a detailed risk assessment in JSON format with:
 {
   "trustScore": number between 0-100,
-  "analysis": "brief text explanation of the token risk profile",
-  "riskFactors": ["list", "of", "specific", "risk", "factors"],
+  "analysis": "brief text explanation",
+  "riskFactors": ["list of risks"],
   "scamPatterns": [
     {
-      "patternName": "name of detected scam pattern",
-      "similarity": percentage as number between 0-100,
-      "description": "brief description of this pattern"
+      "patternName": "pattern name",
+      "similarity": percentage (0-100),
+      "description": "pattern description"
     }
   ],
-  "contractVulnerabilities": ["list", "of", "potential", "vulnerabilities"]
-}
-`;
+  "contractVulnerabilities": ["list of vulnerabilities"]
+}`;
 
-      const response = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-        {
-          contents: [
-            {
-              parts: [
-                {
-                  text: prompt
-                }
-              ]
-            }
-          ],
-          generationConfig: {
-            temperature: 0.2,
-            topP: 0.8,
-            topK: 40,
-            maxOutputTokens: 2048
+    const response = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        contents: [
+          {
+            parts: [
+              {
+                text: prompt
+              }
+            ]
           }
-        }
-      );
-      
-      // Parse the JSON response from Gemini
-      const generatedText = response.data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
-      
-      if (jsonMatch) {
-        try {
-          const parsedResult = JSON.parse(jsonMatch[0]);
-          return parsedResult;
-        } catch (parseError) {
-          console.error('Error parsing Gemini JSON response:', parseError);
-          return fallbackAnalysis;
+        ],
+        generationConfig: {
+          temperature: 0.2,
+          topP: 0.8,
+          topK: 40,
+          maxOutputTokens: 2048
         }
       }
-      
-      return fallbackAnalysis;
-    } catch (error) {
-      console.error('Gemini API error:', error.response?.data || error.message);
-      return fallbackAnalysis;
+    );
+
+    const generatedText = response.data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
+    
+    if (jsonMatch) {
+      try {
+        return JSON.parse(jsonMatch[0]);
+      } catch (error) {
+        console.error('Failed to parse Gemini response:', error);
+        return generateFallbackAnalysis(tokenData, contractData);
+      }
     }
+    
+    return generateFallbackAnalysis(tokenData, contractData);
   } catch (error) {
-    console.error('Error generating analysis:', error);
-    return {
-      trustScore: 50,
-      analysis: "Unable to analyze token data",
-      riskFactors: ["Analysis service unavailable"]
-    };
+    console.error('Gemini API error:', error);
+    return generateFallbackAnalysis(tokenData, contractData);
   }
 };
 
-// Fallback algorithm when AI analysis is unavailable
 const generateFallbackAnalysis = (tokenData: any, contractData?: any): TrustAnalysis => {
   let trustScore = 50; // Default middle score
   const riskFactors = [];
   
-  // If we have GT score from CoinGecko, use it as a base
   if (tokenData.gt_score) {
     trustScore = Math.round(tokenData.gt_score);
   }
   
-  // Look at distribution - high concentration in top wallets is a risk
   if (tokenData.holders?.distribution_percentage) {
     const topConcentration = parseFloat(tokenData.holders.distribution_percentage.top_10 || '0');
     if (topConcentration > 80) {
@@ -135,21 +110,17 @@ const generateFallbackAnalysis = (tokenData: any, contractData?: any): TrustAnal
     }
   }
   
-  // Check if token has social presence
   if (!tokenData.twitter_handle && !tokenData.discord_url && !tokenData.telegram_handle) {
     trustScore -= 10;
     riskFactors.push("No verified social media presence");
   }
   
-  // Check if token has a website
   if (!tokenData.websites || tokenData.websites.length === 0) {
     trustScore -= 15;
     riskFactors.push("No official website found");
   }
   
-  // Check market data
   if (tokenData.market_data) {
-    // Low market cap is riskier
     const marketCap = tokenData.market_data.market_cap?.usd || 0;
     if (marketCap < 100000) {
       trustScore -= 15;
@@ -159,14 +130,12 @@ const generateFallbackAnalysis = (tokenData: any, contractData?: any): TrustAnal
       riskFactors.push("Low market capitalization (<$1M)");
     }
     
-    // Low volume is riskier
     const volume = tokenData.market_data.total_volume?.usd || 0;
     if (volume < 10000) {
       trustScore -= 10;
       riskFactors.push("Very low trading volume (<$10k)");
     }
     
-    // High volatility can be a risk
     const priceChange = tokenData.market_data.price_change_percentage_24h;
     if (priceChange && Math.abs(priceChange) > 30) {
       trustScore -= 5;
@@ -174,7 +143,6 @@ const generateFallbackAnalysis = (tokenData: any, contractData?: any): TrustAnal
     }
   }
   
-  // Contract data analysis
   if (contractData) {
     if (!contractData.isVerified) {
       trustScore -= 20;
@@ -187,7 +155,6 @@ const generateFallbackAnalysis = (tokenData: any, contractData?: any): TrustAnal
     }
   }
   
-  // Generate analysis text
   let analysis = "";
   if (trustScore >= 80) {
     analysis = `${tokenData.name} appears to be a reputable token with good transparency and distribution metrics.`;
@@ -199,15 +166,12 @@ const generateFallbackAnalysis = (tokenData: any, contractData?: any): TrustAnal
     analysis = `${tokenData.name} displays numerous high-risk characteristics typical of suspicious tokens.`;
   }
   
-  // Ensure score stays within 0-100 range
   trustScore = Math.max(0, Math.min(100, trustScore));
   
-  // Add general advice if no specific risk factors were identified
   if (riskFactors.length === 0) {
     riskFactors.push("Always conduct your own research before investing");
   }
   
-  // Generate mock scam patterns if score is very low
   const scamPatterns = trustScore < 30 ? [
     {
       patternName: "Suspicious Token Distribution",
@@ -221,7 +185,6 @@ const generateFallbackAnalysis = (tokenData: any, contractData?: any): TrustAnal
     }
   ] : [];
   
-  // Generate mock contract vulnerabilities if score is low
   const contractVulnerabilities = trustScore < 40 ? [
     "Potential centralized control functions",
     "Lack of proper event emission",

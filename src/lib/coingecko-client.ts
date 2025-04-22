@@ -1,8 +1,7 @@
-
 import axios from 'axios';
 
 const COINGECKO_API_KEY = 'CG-LggZcVpfVpN9wDLpAsMoy7Yr';
-const BASE_URL = 'https://api.coingecko.com/api/v3'; // Using api.coingecko.com instead of pro-api
+const BASE_URL = 'https://api.coingecko.com/api/v3'; // Using non-pro API URL
 
 export interface TokenInfo {
   id: string;
@@ -114,74 +113,50 @@ interface CoinGeckoTokenData {
 
 export const getTokenInfo = async (network: string, address: string): Promise<TokenInfo | null> => {
   try {
-    // First try the coin data endpoint
-    try {
-      const response = await axios.get<CoinGeckoTokenData>(
-        `${BASE_URL}/coins/${network}/contract/${address}`,
-        {
-          params: {
-            localization: false,
-            tickers: false,
-            community_data: true,
-            developer_data: true,
-            sparkline: false
-          }
-        }
-      );
-      
-      // Format the response to match our TokenInfo interface
-      const data = response.data;
-      
-      // Return formatted data
-      return {
-        id: data.id,
-        name: data.name,
-        symbol: data.symbol,
-        image_url: data.image?.small || '',
-        description: data.description?.en || '',
-        websites: data.links?.homepage?.filter(Boolean) || [],
-        gt_score: data.coingecko_score || 50,
-        twitter_handle: data.links?.twitter_screen_name,
-        discord_url: data.links?.chat_url?.[0],
-        telegram_handle: data.links?.telegram_channel_identifier,
-        market_data: {
-          current_price: { usd: data.market_data?.current_price?.usd },
-          market_cap: { usd: data.market_data?.market_cap?.usd },
-          total_volume: { usd: data.market_data?.total_volume?.usd },
-          price_change_percentage_24h: data.market_data?.price_change_percentage_24h
+    // Using the correct endpoint format for the non-pro API
+    const response = await axios.get<CoinGeckoTokenData>(
+      `${BASE_URL}/coins/${network}/contract/${address}`,
+      {
+        headers: {
+          'x-cg-pro-api-key': COINGECKO_API_KEY
         },
-        developer_data: data.developer_data,
-        community_data: data.community_data
-      };
-    } catch (error) {
-      console.warn('CoinGecko coin data request failed, trying alternative endpoint:', error);
-      
-      // Try the token info endpoint as backup
-      const response = await axios.get<TokenInfoResponse>(
-        `${BASE_URL}/coins/ethereum/contract/${address}`,
-        {
-          headers: {
-            'x-cg-pro-api-key': COINGECKO_API_KEY,
-          },
+        params: {
+          localization: false,
+          tickers: false,
+          community_data: true,
+          developer_data: true,
+          sparkline: false
         }
-      );
-      
-      console.log('CoinGecko API response:', response.data);
-      return response.data.data?.attributes || null;
-    }
-  } catch (error) {
-    console.error('All CoinGecko API requests failed:', error.response?.data || error.message);
+      }
+    );
     
-    // Return minimal fallback data
+    const data = response.data;
+    
     return {
-      id: '',
-      name: '',
-      symbol: '',
-      image_url: '',
-      description: 'No data available from CoinGecko',
-      websites: [],
-      gt_score: 0
+      id: data.id,
+      name: data.name,
+      symbol: data.symbol,
+      image_url: data.image?.small || '',
+      description: data.description?.en || '',
+      websites: data.links?.homepage?.filter(Boolean) || [],
+      gt_score: data.coingecko_score || 50,
+      twitter_handle: data.links?.twitter_screen_name,
+      discord_url: data.links?.chat_url?.[0],
+      telegram_handle: data.links?.telegram_channel_identifier,
+      market_data: {
+        current_price: { usd: data.market_data?.current_price?.usd },
+        market_cap: { usd: data.market_data?.market_cap?.usd },
+        total_volume: { usd: data.market_data?.total_volume?.usd },
+        price_change_percentage_24h: data.market_data?.price_change_percentage_24h
+      },
+      developer_data: data.developer_data,
+      community_data: data.community_data,
+      holders: data.holders
     };
+
+  } catch (error) {
+    console.warn('CoinGecko API request failed:', error);
+    return null;
   }
 };
 
