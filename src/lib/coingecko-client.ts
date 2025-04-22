@@ -44,59 +44,18 @@ export interface TokenInfoResponse {
 
 export const getTokenInfo = async (network: string, address: string): Promise<TokenInfo | null> => {
   try {
-    // Use regular API endpoint for demo key
-    const response = await axios.get(
-      `${BASE_URL}/coins/${network}/contract/${address}`,
+    const response = await axios.get<TokenInfoResponse>(
+      `${BASE_URL}/onchain/networks/${network}/tokens/${address}/info`,
       {
         headers: {
-          'x-cg-api-key': COINGECKO_API_KEY,
+          'x-cg-pro-api-key': COINGECKO_API_KEY,
         },
       }
     );
-    
-    // Transform the response to match our expected format
-    const data = response.data;
-    
-    // Extract social data
-    const community_data = data.community_data || {};
-    const developer_data = data.developer_data || {};
-    
-    // Create a normalized response
-    const tokenInfo: TokenInfo = {
-      id: data.id || '',
-      name: data.name || '',
-      symbol: data.symbol?.toUpperCase() || '',
-      image_url: data.image?.large || '',
-      description: data.description?.en || '',
-      websites: [data.links?.homepage?.[0] || ''].filter(Boolean),
-      gt_score: data.coingecko_score || 50,
-      gt_score_details: {
-        pool: data.liquidity_score || 50,
-        transaction: data.public_interest_score || 50,
-        creation: data.developer_score || 50,
-        info: data.community_score || 50,
-        holders: data.market_cap_rank ? 100 - Math.min(data.market_cap_rank, 100) : 50
-      },
-      twitter_handle: data.links?.twitter_screen_name || '',
-      discord_url: data.links?.chat_url?.find((url: string) => url.includes('discord')) || '',
-      telegram_handle: data.links?.telegram_channel_identifier || '',
-      holders: {
-        count: Math.floor(Math.random() * 1000) + 100, // This is not provided by the API
-        distribution_percentage: {
-          top_10: Math.floor(Math.random() * 50 + 30).toString(), // These are not provided by the API
-          '11_30': Math.floor(Math.random() * 20 + 10).toString(),
-          '31_50': Math.floor(Math.random() * 10 + 5).toString(),
-          rest: Math.floor(Math.random() * 20 + 5).toString()
-        },
-        last_updated: new Date().toISOString()
-      }
-    };
-    
-    return tokenInfo;
+    console.log('CoinGecko API response:', response.data);
+    return response.data.data.attributes;
   } catch (error) {
     console.error('CoinGecko API request failed:', error.response?.data || error.message);
-    
-    // Return null for now, but could return a mock response for development
     return null;
   }
 };

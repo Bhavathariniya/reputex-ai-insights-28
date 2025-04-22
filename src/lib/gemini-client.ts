@@ -1,20 +1,12 @@
 
 import axios from 'axios';
-import { TokenAnalysisResult } from './types';
 
 const GEMINI_API_KEY = 'AIzaSyCKcAc1ZYcoviJ-6tdm-HuRguPMjMz6OSA';
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent';
 
 export interface TrustAnalysis {
   trustScore: number;
   analysis: string;
   riskFactors: string[];
-  communityScore?: number;
-  developerScore?: number;
-  liquidityScore?: number;
-  holderDistributionScore?: number;
-  fraudRisk?: number;
-  socialSentiment?: number;
 }
 
 export const analyzeTrustScore = async (tokenData: any): Promise<TrustAnalysis> => {
@@ -25,69 +17,39 @@ export const analyzeTrustScore = async (tokenData: any): Promise<TrustAnalysis> 
     
     // Try to use Gemini API first
     try {
-      const prompt = `
-        Analyze this token data and provide a trust score and analysis:
-        Name: ${tokenData.name}
-        Symbol: ${tokenData.symbol}
-        GT Score: ${tokenData.gt_score || 'Unknown'}
-        Holders Count: ${tokenData.holders?.count || 'Unknown'}
-        Distribution Percentage: ${JSON.stringify(tokenData.holders?.distribution_percentage || {})}
-        
-        Provide a response in JSON format with:
-        - trustScore (number between 0-100)
-        - analysis (brief text explanation)
-        - riskFactors (array of potential risk factors)
-        - communityScore (number between 0-100)
-        - developerScore (number between 0-100)
-        - liquidityScore (number between 0-100)
-        - holderDistributionScore (number between 0-100)
-        - fraudRisk (number between 0-100)
-        - socialSentiment (number between 0-100)
-      `;
+      const response = await axios.post(
+        `https://generativelanguage.googleapis.com/v1/models/gemini-1.0-pro:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          contents: [
+            {
+              parts: [
+                {
+                  text: `
+                    Analyze this token data and provide a trust score and analysis:
+                    Name: ${tokenData.name}
+                    Symbol: ${tokenData.symbol}
+                    GT Score: ${tokenData.gt_score || 'Unknown'}
+                    Holders Count: ${tokenData.holders?.count || 'Unknown'}
+                    Distribution Percentage: ${JSON.stringify(tokenData.holders?.distribution_percentage || {})}
+                    
+                    Provide a response in JSON format with:
+                    - trustScore (number between 0-100)
+                    - analysis (brief text explanation)
+                    - riskFactors (array of potential risk factors)
+                  `
+                }
+              ]
+            }
+          ]
+        }
+      );
       
-      const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: prompt
-            }]
-          }]
-        })
-      });
-      
-      const data = await response.json();
-      
-      // Handle potential Gemini API errors
-      if (!data.candidates || data.error) {
-        console.error('Gemini API error:', data.error || 'No candidates returned');
-        return fallbackAnalysis;
-      }
-      
-      const analysisText = data.candidates[0].content.parts[0].text;
-      const jsonMatch = analysisText.match(/\{[\s\S]*\}/);
+      // Parse the JSON response from Gemini
+      const generatedText = response.data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
       
       if (jsonMatch) {
-        try {
-          const parsedAnalysis = JSON.parse(jsonMatch[0]);
-          return {
-            trustScore: parsedAnalysis.trustScore || fallbackAnalysis.trustScore,
-            analysis: parsedAnalysis.analysis || fallbackAnalysis.analysis,
-            riskFactors: parsedAnalysis.riskFactors || fallbackAnalysis.riskFactors,
-            communityScore: parsedAnalysis.communityScore || fallbackAnalysis.communityScore,
-            developerScore: parsedAnalysis.developerScore || fallbackAnalysis.developerScore,
-            liquidityScore: parsedAnalysis.liquidityScore || fallbackAnalysis.liquidityScore,
-            holderDistributionScore: parsedAnalysis.holderDistributionScore || fallbackAnalysis.holderDistributionScore,
-            fraudRisk: parsedAnalysis.fraudRisk || fallbackAnalysis.fraudRisk,
-            socialSentiment: parsedAnalysis.socialSentiment || fallbackAnalysis.socialSentiment
-          };
-        } catch (parseError) {
-          console.error('Error parsing Gemini response:', parseError);
-          return fallbackAnalysis;
-        }
+        return JSON.parse(jsonMatch[0]);
       }
       
       return fallbackAnalysis;
@@ -139,16 +101,6 @@ const generateFallbackAnalysis = (tokenData: any): TrustAnalysis => {
     riskFactors.push("No official website found");
   }
   
-  // Generate scores for other metrics
-  const communityScore = Math.min(100, Math.max(0, trustScore + (Math.random() * 20 - 10)));
-  const developerScore = Math.min(100, Math.max(0, trustScore + (Math.random() * 20 - 10)));
-  const liquidityScore = Math.min(100, Math.max(0, trustScore + (Math.random() * 20 - 10)));
-  const holderDistributionScore = tokenData.holders?.distribution_percentage?.top_10 
-    ? 100 - parseFloat(tokenData.holders.distribution_percentage.top_10)
-    : Math.min(100, Math.max(0, trustScore + (Math.random() * 20 - 10)));
-  const fraudRisk = Math.max(0, Math.min(100, 100 - trustScore + (Math.random() * 20 - 10)));
-  const socialSentiment = Math.min(100, Math.max(0, trustScore + (Math.random() * 20 - 10)));
-  
   // Generate analysis text
   let analysis = "";
   if (trustScore >= 80) {
@@ -172,12 +124,6 @@ const generateFallbackAnalysis = (tokenData: any): TrustAnalysis => {
   return {
     trustScore,
     analysis,
-    riskFactors,
-    communityScore,
-    developerScore,
-    liquidityScore,
-    holderDistributionScore,
-    fraudRisk,
-    socialSentiment
+    riskFactors
   };
 };
