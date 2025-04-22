@@ -1,3 +1,4 @@
+
 import axios from 'axios';
 
 const GEMINI_API_KEY = 'AIzaSyCKcAc1ZYcoviJ-6tdm-HuRguPMjMz6OSA';
@@ -15,6 +16,15 @@ export interface TrustAnalysis {
 }
 
 export const analyzeTrustScore = async (tokenData: any, contractData?: any): Promise<TrustAnalysis> => {
+  // If no token data is available, return a default analysis
+  if (!tokenData) {
+    return {
+      trustScore: 50, // Neutral score
+      analysis: "Insufficient data available to perform a complete analysis. This may be due to the token being new, unlisted, or not fully indexed.",
+      riskFactors: ["Limited data available for comprehensive analysis", "Consider researching this token further before making any decisions"]
+    };
+  }
+  
   try {
     const prompt = `
 Analyze this token data and provide a detailed risk assessment:
@@ -95,6 +105,14 @@ const generateFallbackAnalysis = (tokenData: any, contractData?: any): TrustAnal
   let trustScore = 50; // Default middle score
   const riskFactors = [];
   
+  if (!tokenData) {
+    return {
+      trustScore: 50,
+      analysis: "Insufficient data available for proper analysis. Please check the token address and network.",
+      riskFactors: ["Limited data available", "Token may be unlisted or new"]
+    };
+  }
+  
   if (tokenData.gt_score) {
     trustScore = Math.round(tokenData.gt_score);
   }
@@ -152,6 +170,13 @@ const generateFallbackAnalysis = (tokenData: any, contractData?: any): TrustAnal
     if (!contractData.isLiquidityLocked) {
       trustScore -= 15;
       riskFactors.push("Liquidity does not appear to be locked");
+    }
+  }
+  
+  // Network-specific considerations
+  if (tokenData.network === 'solana') {
+    if (!riskFactors.length) {
+      riskFactors.push("Token exists on Solana blockchain");
     }
   }
   

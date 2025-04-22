@@ -1,7 +1,9 @@
+
 import axios from 'axios';
 
 const COINGECKO_API_KEY = 'CG-LggZcVpfVpN9wDLpAsMoy7Yr';
 const BASE_URL = 'https://api.coingecko.com/api/v3'; // Using non-pro API URL
+const PRO_BASE_URL = 'https://pro-api.coingecko.com/api/v3'; // Pro API URL
 
 export interface TokenInfo {
   id: string;
@@ -121,24 +123,95 @@ interface CoinGeckoTokenData {
   };
 }
 
+// Map network IDs to CoinGecko platform IDs
+const NETWORK_TO_PLATFORM = {
+  'eth': 'ethereum',
+  'ethereum': 'ethereum',
+  'bsc': 'binance-smart-chain',
+  'binance': 'binance-smart-chain',
+  'polygon': 'polygon-pos',
+  'arbitrum': 'arbitrum-one',
+  'optimism': 'optimistic-ethereum',
+  'avalanche': 'avalanche',
+  'fantom': 'fantom',
+  'solana': 'solana',
+  'base': 'base',
+  'zksync': 'zksync'
+};
+
+// Fetch token info from CoinGecko
 export const getTokenInfo = async (network: string, address: string): Promise<TokenInfo | null> => {
   try {
-    // Using the correct endpoint format for the non-pro API
-    const response = await axios.get<CoinGeckoTokenData>(
-      `${BASE_URL}/coins/${network}/contract/${address}`,
-      {
-        headers: {
-          'x-cg-pro-api-key': COINGECKO_API_KEY
-        },
-        params: {
-          localization: false,
-          tickers: false,
-          community_data: true,
-          developer_data: true,
-          sparkline: false
-        }
+    // Convert network ID to platform ID
+    const platformId = NETWORK_TO_PLATFORM[network.toLowerCase() as keyof typeof NETWORK_TO_PLATFORM] || 'ethereum';
+    
+    // Try to use the Pro API first, then fall back to the public API
+    let response;
+    try {
+      // For Solana, we need to use a different endpoint format
+      if (platformId === 'solana') {
+        response = await axios.get<CoinGeckoTokenData>(
+          `${PRO_BASE_URL}/coins/${platformId}/contract/${address}`,
+          {
+            headers: {
+              'x-cg-pro-api-key': COINGECKO_API_KEY
+            },
+            params: {
+              localization: false,
+              tickers: false,
+              community_data: true,
+              developer_data: true,
+              sparkline: false
+            }
+          }
+        );
+      } else {
+        response = await axios.get<CoinGeckoTokenData>(
+          `${PRO_BASE_URL}/coins/${platformId}/contract/${address}`,
+          {
+            headers: {
+              'x-cg-pro-api-key': COINGECKO_API_KEY
+            },
+            params: {
+              localization: false,
+              tickers: false,
+              community_data: true,
+              developer_data: true,
+              sparkline: false
+            }
+          }
+        );
       }
-    );
+    } catch (error) {
+      // If Pro API fails, try the public API
+      if (platformId === 'solana') {
+        response = await axios.get<CoinGeckoTokenData>(
+          `${BASE_URL}/coins/${platformId}/contract/${address}`,
+          {
+            params: {
+              localization: false,
+              tickers: false,
+              community_data: true,
+              developer_data: true,
+              sparkline: false
+            }
+          }
+        );
+      } else {
+        response = await axios.get<CoinGeckoTokenData>(
+          `${BASE_URL}/coins/${platformId}/contract/${address}`,
+          {
+            params: {
+              localization: false,
+              tickers: false,
+              community_data: true,
+              developer_data: true,
+              sparkline: false
+            }
+          }
+        );
+      }
+    }
     
     const data = response.data;
     
@@ -170,10 +243,13 @@ export const getTokenInfo = async (network: string, address: string): Promise<To
   }
 };
 
-export const getTokenMarketData = async (address: string): Promise<any | null> => {
+export const getTokenMarketData = async (address: string, network: string = 'ethereum'): Promise<any | null> => {
   try {
+    // Convert network ID to platform ID
+    const platformId = NETWORK_TO_PLATFORM[network.toLowerCase() as keyof typeof NETWORK_TO_PLATFORM] || 'ethereum';
+    
     const response = await axios.get(
-      `${BASE_URL}/coins/ethereum/contract/${address}/market_chart`,
+      `${BASE_URL}/coins/${platformId}/contract/${address}/market_chart`,
       {
         params: {
           vs_currency: 'usd',

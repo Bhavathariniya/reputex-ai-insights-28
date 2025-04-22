@@ -1,3 +1,4 @@
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEffect, useState } from "react";
@@ -18,6 +19,7 @@ import TokenContractAnalysis from "./TokenContractAnalysis";
 import TokenStats, { TokenStatsProps } from "./TokenStats";
 import AnalysisReport from "./AnalysisReport";
 import LoadingAnimation from "./LoadingAnimation";
+import { toast } from "sonner";
 
 interface TokenData {
   tokenName: string;
@@ -32,6 +34,22 @@ interface TokenData {
   compilerVersion?: string;
 }
 
+// Map networks to their ID values used by API services
+const NETWORK_MAP: Record<string, string> = {
+  'ethereum': 'eth',
+  'eth': 'eth',
+  'binance': 'bsc',
+  'bsc': 'bsc',
+  'polygon': 'polygon',
+  'arbitrum': 'arbitrum',
+  'optimism': 'optimism',
+  'avalanche': 'avalanche',
+  'fantom': 'fantom',
+  'solana': 'solana',
+  'base': 'base',
+  'zksync': 'zksync'
+};
+
 const ResultTabs = () => {
   const { address } = useParams<{ address: string }>();
   const [isLoading, setIsLoading] = useState(false);
@@ -39,31 +57,76 @@ const ResultTabs = () => {
   const [analysisResult, setAnalysisResult] = useState<TrustAnalysis | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
   const [network, setNetwork] = useState("eth");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Try to get network from localStorage or URL params
+    const storedNetwork = localStorage.getItem('selectedNetwork') || 'eth';
+    const urlSearchParams = new URLSearchParams(window.location.search);
+    const networkParam = urlSearchParams.get('network');
+    
+    // Use network param if provided, otherwise use stored network
+    const selectedNetwork = networkParam ? 
+      NETWORK_MAP[networkParam.toLowerCase()] || networkParam.toLowerCase() : 
+      storedNetwork;
+    
+    setNetwork(selectedNetwork);
+    
     const fetchTokenData = async () => {
       if (!address) return;
       
       setIsLoading(true);
+      setError(null);
+      
       try {
-        if (address.startsWith('0x') && address.length === 42) {
-          const info = await getTokenInfo('eth', address);
+        // First, validate the address format (basic check)
+        let isValidAddress = false;
+        
+        // Check if it's a valid Ethereum/EVM address
+        if (selectedNetwork !== 'solana') {
+          isValidAddress = /^0x[a-fA-F0-9]{40}$/.test(address);
+        } 
+        // Check if it's a valid Solana address
+        else {
+          isValidAddress = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address);
+        }
+        
+        if (!isValidAddress) {
+          throw new Error(`Invalid ${selectedNetwork} address format`);
+        }
+        
+        // Get token info from CoinGecko
+        const info = await getTokenInfo(selectedNetwork, address);
+        
+        if (info) {
+          // Add network information to the token info
+          const enrichedInfo = {
+            ...info,
+            network: selectedNetwork
+          };
           
-          if (info) {
-            setTokenInfo(info);
-            
-            const analysis = await analyzeTrustScore(info);
-            setAnalysisResult(analysis);
-          }
+          setTokenInfo(enrichedInfo);
+          
+          // Analyze the token using the Gemini API
+          const analysis = await analyzeTrustScore(enrichedInfo);
+          setAnalysisResult(analysis);
+          
+          toast.success(`Successfully analyzed ${info.name || 'token'}`);
+        } else {
+          throw new Error(`Token information not found. The token may not be listed on CoinGecko.`);
         }
       } catch (error) {
         console.error("Error fetching token data:", error);
+        setError((error as Error).message || 'Failed to analyze token. Please check the contract address and network.');
+        toast.error('Failed to analyze token');
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchTokenData();
+    if (address) {
+      fetchTokenData();
+    }
   }, [address]);
 
   if (isLoading) {
@@ -79,6 +142,26 @@ const ResultTabs = () => {
     );
   }
 
+  if (error) {
+    return (
+      <Card className="w-full">
+        <CardContent className="pt-6">
+          <div className="flex flex-col items-center justify-center p-8 text-center">
+            <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
+            <p className="text-lg font-medium mb-4">{error}</p>
+            <p className="text-sm text-muted-foreground mb-6">
+              Please check that you've entered a valid contract address for the {network} network.
+            </p>
+            <Button onClick={() => window.history.back()}>
+              Go Back
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Mock data for UI display when real data isn't available
   const mockTokenStats: TokenStatsProps = {
     address: address,
     trendingTokens: [
@@ -169,7 +252,7 @@ const ResultTabs = () => {
     tokenName: tokenInfo?.name || "Unknown Token",
     tokenSymbol: tokenInfo?.symbol || "???",
     totalSupply: "1000000000000000000000000",
-    holderCount: 500,
+    holderCount: tokenInfo?.holders?.count || 500,
     isLiquidityLocked: true,
     decimals: 18,
     isVerified: true
@@ -196,8 +279,8 @@ const ResultTabs = () => {
           </div>
           <CardDescription>
             {tokenInfo ? 
-              `Comprehensive blockchain intelligence for ${address}` : 
-              `Analyzing address ${address || "unknown"}`}
+              `Comprehensive blockchain intelligence for ${address} on ${network}` : 
+              `Analyzing address ${address || "unknown"} on ${network}`}
           </CardDescription>
         </CardHeader>
         <CardContent>
