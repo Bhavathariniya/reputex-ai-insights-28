@@ -272,15 +272,7 @@ const ResultTabs = () => {
                 }}
                 analysis={analysisResult.analysis}
                 timestamp={new Date().toISOString()}
-                tokenData={tokenInfo ? {
-                  tokenName: tokenInfo.name,
-                  tokenSymbol: tokenInfo.symbol,
-                  totalSupply: "1000000000",
-                  decimals: 18,
-                  holderCount: 500,
-                  isLiquidityLocked: true,
-                  isVerified: true
-                } : undefined}
+                tokenData={tokenData}
                 scamIndicators={analysisResult.riskFactors.map(risk => ({
                   label: "Risk Factor",
                   description: risk
