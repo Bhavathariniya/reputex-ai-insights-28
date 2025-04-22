@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Search, Loader2, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -6,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { detectNetwork, validateAddress } from '@/lib/alchemy-client';
 import {
   BitcoinIcon,
   L1XIcon,
@@ -25,7 +25,7 @@ const BnbChainCircleImage = BNBChainIcon;
 const BaseIcon = BaseCircleImage;
 
 const BLOCKCHAINS = [
-  { id: 'auto', name: 'Auto Detect', icon: Zap }, // Added auto detect option with Zap icon
+  { id: 'auto', name: 'Auto Detect', icon: Zap },
   { id: 'bitcoin', name: 'Bitcoin', icon: BitcoinIcon },
   { id: 'l1x', name: 'L1X', icon: L1XIcon },
   { id: 'ethereum', name: 'Ethereum', icon: EthereumIcon },
@@ -83,7 +83,8 @@ const BlockchainSelector: React.FC<{
 
 const AddressInput: React.FC<AddressInputProps> = ({ onSubmit, isLoading }) => {
   const [address, setAddress] = useState('');
-  const [network, setNetwork] = useState('auto'); // Set auto as default for network detection
+  const [network, setNetwork] = useState('auto');
+  const [isDetecting, setIsDetecting] = useState(false);
   const navigate = useNavigate();
 
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -95,14 +96,7 @@ const AddressInput: React.FC<AddressInputProps> = ({ onSubmit, isLoading }) => {
     setNetwork(value);
   };
 
-  const validateAddress = (addr: string): boolean => {
-    if (addr.startsWith('0x') && addr.length === 42) return true;
-    if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(addr)) return true;
-    if (/^(1|3|bc1)[a-zA-Z0-9]{25,42}$/.test(addr)) return true;
-    return false;
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!address) {
@@ -115,23 +109,36 @@ const AddressInput: React.FC<AddressInputProps> = ({ onSubmit, isLoading }) => {
       return;
     }
 
-    onSubmit(address, network);
+    try {
+      setIsDetecting(true);
+      
+      const detectedNetwork = network === 'auto' ? 
+        await detectNetwork(address) : 
+        network;
 
-    navigate('/result', {
-      state: { address, network },
-      replace: true
-    });
+      onSubmit(address, detectedNetwork);
+
+      navigate('/result', {
+        state: { address, network: detectedNetwork },
+        replace: true
+      });
+    } catch (error) {
+      console.error('Error detecting network:', error);
+      toast.error('Error detecting network. Please try again or select a network manually.');
+    } finally {
+      setIsDetecting(false);
+    }
   };
+
+  const isProcessing = isLoading || isDetecting;
 
   return (
     <form onSubmit={handleSubmit} className="max-w-4xl mx-auto mt-8">
       <BlockchainSelector 
         selectedNetwork={network}
         onNetworkChange={handleNetworkChange}
-        disabled={isLoading}
+        disabled={isProcessing}
       />
-
-      {/* Auto-detection is now handled by the network selector */}
       
       <div className="glowing-card p-2 rounded-xl">
         <div className="flex flex-col md:flex-row gap-2">
@@ -141,7 +148,7 @@ const AddressInput: React.FC<AddressInputProps> = ({ onSubmit, isLoading }) => {
               value={address}
               onChange={handleAddressChange}
               className="pl-10 py-6 bg-transparent border-muted focus-visible:ring-neon-cyan"
-              disabled={isLoading}
+              disabled={isProcessing}
               spellCheck={false}
               autoComplete="off"
             />
@@ -151,12 +158,12 @@ const AddressInput: React.FC<AddressInputProps> = ({ onSubmit, isLoading }) => {
           <Button 
             type="submit" 
             className="bg-neon-cyan hover:bg-neon-cyan/80 py-6" 
-            disabled={isLoading}
+            disabled={isProcessing}
           >
-            {isLoading ? (
+            {isProcessing ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Analyzing...
+                {isDetecting ? 'Detecting...' : 'Analyzing...'}
               </>
             ) : (
               <>Analyze</>
@@ -169,4 +176,3 @@ const AddressInput: React.FC<AddressInputProps> = ({ onSubmit, isLoading }) => {
 };
 
 export default AddressInput;
-
