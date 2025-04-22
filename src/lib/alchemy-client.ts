@@ -80,8 +80,8 @@ export async function getTokenAllowance(
   spenderAddress: string
 ): Promise<string> {
   try {
-    // Get the underlying ethers provider from the Alchemy instance
-    const response = await alchemy.core.getProvider().send("alchemy_getTokenAllowance", [{
+    const provider = alchemy.config.getProvider();
+    const response = await provider.send("alchemy_getTokenAllowance", [{
       contract: contractAddress,
       owner: ownerAddress,
       spender: spenderAddress
