@@ -109,6 +109,16 @@ interface CoinGeckoTokenData {
     reddit_subscribers?: number;
     telegram_channel_user_count?: number;
   };
+  holders?: {
+    count: number;
+    distribution_percentage: {
+      top_10: string;
+      '11_30': string;
+      '31_50': string;
+      rest: string;
+    };
+    last_updated: string;
+  };
 }
 
 export const getTokenInfo = async (network: string, address: string): Promise<TokenInfo | null> => {
