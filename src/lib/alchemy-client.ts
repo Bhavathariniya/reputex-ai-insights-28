@@ -1,3 +1,4 @@
+
 import { Alchemy, Network } from 'alchemy-sdk';
 
 const ALCHEMY_CONFIG = {
@@ -80,8 +81,8 @@ export async function getTokenAllowance(
   spenderAddress: string
 ): Promise<string> {
   try {
-    // Make a raw JSON-RPC request to use the alchemy_getTokenAllowance method directly
-    const response = await alchemy.core.provider.send("alchemy_getTokenAllowance", [{
+    // Access the provider through the alchemy instance instead of through core
+    const response = await alchemy.provider.send("alchemy_getTokenAllowance", [{
       contract: contractAddress,
       owner: ownerAddress,
       spender: spenderAddress
